@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @Slf4j
 @Service
@@ -51,6 +52,13 @@ public class RunningRecordService {
                 .build();
 
         return RunningRecordResponse.from(runningRecordRepository.save(record));
+    }
+
+    public void delete(Long id) {
+        if (!runningRecordRepository.existsById(id)) {
+            throw new NoSuchElementException("기록을 찾을 수 없습니다: " + id);
+        }
+        runningRecordRepository.deleteById(id);
     }
 
     @Transactional(readOnly = true)

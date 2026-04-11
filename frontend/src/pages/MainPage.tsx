@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { Activity, Target, Timer, Clock, Gauge } from 'lucide-react'
+import { Activity, Target, Timer, Clock, Gauge, Trash2 } from 'lucide-react'
 import Header from '../components/Header'
 import StatCard from '../components/StatCard'
 import ProgressBar from '../components/ProgressBar'
 import UploadModal from '../components/UploadModal'
 import GoalModal from '../components/GoalModal'
-import { getRecords } from '../api/runningApi'
+import { getRecords, deleteRecord } from '../api/runningApi'
 import type { RunningRecord } from '../api/runningApi'
 import { getGoal } from '../api/goalApi'
 import type { Goal } from '../api/goalApi'
@@ -377,9 +377,23 @@ export default function MainPage() {
                   >
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-foreground">{formatDate(r.date)}</span>
-                      <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full truncate max-w-24">
-                        {r.title}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full truncate max-w-24">
+                          {r.title}
+                        </span>
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation()
+                            if (!window.confirm(`"${r.title}" 기록을 삭제할까요?`)) return
+                            await deleteRecord(r.id)
+                            if (focusedId === r.id) setFocusedId(null)
+                            await refresh()
+                          }}
+                          className="p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
                     </div>
                     <div className="grid grid-cols-3 gap-2">
                       <div className="flex items-center gap-1.5">

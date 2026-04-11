@@ -27,3 +27,9 @@ export async function uploadFile(file: File): Promise<RunningRecord> {
     await fetch('/api/running-records/upload', { method: 'POST', body: form })
   )
 }
+
+export async function deleteRecord(id: number): Promise<void> {
+  return handleResponse<void>(
+    await fetch(`/api/running-records/${id}`, { method: 'DELETE' })
+  )
+}

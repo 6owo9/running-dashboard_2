@@ -28,4 +28,10 @@ public class RunningRecordController {
             @RequestParam(required = false) String period) {
         return ResponseEntity.ok(ApiResponse.ok(runningRecordService.getRecords(period)));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
+        runningRecordService.delete(id);
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
 }
