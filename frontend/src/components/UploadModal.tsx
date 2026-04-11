@@ -215,7 +215,11 @@ export default function UploadModal({ isOpen, onClose, onUploaded, records }: Pr
             ) : (
               <ul className="flex flex-col divide-y divide-gray-100">
                 {filtered.map(r => (
-                  <li key={r.id} className="flex justify-between items-center py-3">
+                  <li
+                    key={r.id}
+                    className="flex justify-between items-center py-3 cursor-pointer hover:bg-gray-50 rounded-xl px-2 -mx-2 transition-colors"
+                    onClick={() => setSelectedDate(r.date)}
+                  >
                     <div>
                       <p className="text-sm font-medium text-black">{r.title}</p>
                       <p className="text-xs text-gray-400">{r.date}</p>

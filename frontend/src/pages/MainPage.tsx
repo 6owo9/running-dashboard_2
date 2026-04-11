@@ -145,22 +145,25 @@ export default function MainPage() {
             </div>
 
             <div className="relative h-64 sm:h-80 lg:h-[420px]">
+              {/* isolate: Leaflet 내부 z-index를 이 컨테이너 안으로 스코프 격리 */}
+              <div ref={containerRef} className="absolute inset-0 isolate" />
+
+              {/* overlay는 isolate 컨테이너 바깥 → z-[50]으로 확실하게 위에 */}
               {mapLoading && (
-                <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-10">
+                <div className="absolute inset-0 bg-white/70 flex items-center justify-center z-[50] pointer-events-none">
                   <span className="text-sm text-gray-400">불러오는 중...</span>
                 </div>
               )}
               {error && (
-                <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
+                <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-[50] pointer-events-none">
                   <span className="text-sm text-red-400">{error}</span>
                 </div>
               )}
               {!mapLoading && !error && periodRecords.length === 0 && (
-                <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
+                <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-[50] pointer-events-none">
                   <span className="text-sm text-gray-400">이 기간의 러닝 기록이 없습니다.</span>
                 </div>
               )}
-              <div ref={containerRef} className="w-full h-full" />
             </div>
           </div>
 
@@ -190,7 +193,15 @@ export default function MainPage() {
               ) : (
                 <ul className="flex flex-col gap-3">
                   {allRecords.slice(0, 3).map(r => (
-                    <li key={r.id} className="flex justify-between items-center">
+                    <li
+                      key={r.id}
+                      className="flex justify-between items-center cursor-pointer hover:bg-gray-50 rounded-xl px-2 py-1 -mx-2 transition-colors"
+                      onClick={() => {
+                        if (r.coordinates?.length && mapRef.current) {
+                          mapRef.current.fitBounds(L.latLngBounds(r.coordinates))
+                        }
+                      }}
+                    >
                       <div>
                         <p className="text-sm font-medium text-black truncate max-w-28">{r.title}</p>
                         <p className="text-xs text-gray-400">{r.date}</p>
