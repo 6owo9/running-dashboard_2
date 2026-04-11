@@ -1,30 +1,39 @@
 import { useEffect, useState } from 'react'
-import { Target } from 'lucide-react'
-import Header from '../components/Header'
-import ProgressBar from '../components/ProgressBar'
-import { getGoal, saveGoal } from '../api/goalApi'
+import { X, Target } from 'lucide-react'
+import ProgressBar from './ProgressBar'
+import { saveGoal } from '../api/goalApi'
 import type { Goal } from '../api/goalApi'
 
-type View = 'loading' | 'form' | 'confirm' | 'result'
+interface Props {
+  isOpen: boolean
+  onClose: () => void
+  goal: Goal | null
+  onSaved: () => void
+}
 
-export default function GoalPage() {
-  const [goal, setGoal] = useState<Goal | null>(null)
-  const [view, setView] = useState<View>('loading')
+type View = 'form' | 'confirm' | 'result'
+
+export default function GoalModal({ isOpen, onClose, goal, onSaved }: Props) {
+  const [view, setView] = useState<View>(goal ? 'result' : 'form')
   const [input, setInput] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    getGoal()
-      .then(g => {
-        setGoal(g)
-        setView(g ? 'result' : 'form')
-      })
-      .catch(e => {
-        setError(e.message)
-        setView('form')
-      })
-  }, [])
+    document.body.style.overflow = isOpen ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [isOpen])
+
+  // 모달 열릴 때마다 뷰 동기화
+  useEffect(() => {
+    if (isOpen) {
+      setView(goal ? 'result' : 'form')
+      setInput(goal ? String(goal.targetDistanceKm) : '')
+      setError(null)
+    }
+  }, [isOpen, goal])
+
+  if (!isOpen) return null
 
   const handleSaveClick = () => {
     const val = parseFloat(input)
@@ -39,10 +48,9 @@ export default function GoalPage() {
   const handleConfirm = async () => {
     setSaving(true)
     try {
-      const saved = await saveGoal(parseFloat(input))
-      setGoal(saved)
-      setInput('')
-      setView('result')
+      await saveGoal(parseFloat(input))
+      onSaved()
+      onClose()
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : '저장에 실패했습니다.')
       setView('form')
@@ -51,36 +59,30 @@ export default function GoalPage() {
     }
   }
 
-  const handleEdit = () => {
-    setInput(goal ? String(goal.targetDistanceKm) : '')
-    setError(null)
-    setView('form')
-  }
-
   return (
-    <div className="min-h-screen bg-bg">
-      <Header />
-
-      <div className="flex items-start justify-center p-8">
-        <div className="bg-card rounded-2xl shadow-sm p-8 w-full max-w-md">
-          <div className="flex items-center gap-2 mb-6">
-            <Target size={20} />
-            <h2 className="text-lg font-bold">목표 거리</h2>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/40" />
+      <div
+        className="relative bg-card w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl shadow-xl"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* 헤더 */}
+        <div className="flex items-center justify-between p-5 border-b border-gray-100">
+          <div className="flex items-center gap-2">
+            <Target size={16} />
+            <h2 className="font-semibold">목표 거리</h2>
           </div>
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-full">
+            <X size={18} />
+          </button>
+        </div>
 
-          {/* 로딩 */}
-          {view === 'loading' && (
-            <p className="text-sm text-gray-400">불러오는 중...</p>
-          )}
-
-          {/* API 오류 */}
-          {error && view !== 'confirm' && (
-            <p className="text-sm text-warning mb-4">{error}</p>
-          )}
+        <div className="p-5 flex flex-col gap-4">
+          {error && <p className="text-sm text-warning">{error}</p>}
 
           {/* 입력 폼 */}
           {(view === 'form' || view === 'confirm') && (
-            <div className="flex flex-col gap-4">
+            <>
               <div>
                 <label className="text-xs text-gray-400 font-medium">목표 거리 (km)</label>
                 <div className="flex items-center gap-2 mt-1">
@@ -107,10 +109,9 @@ export default function GoalPage() {
                 </button>
               )}
 
-              {/* 확인 절차 */}
               {view === 'confirm' && (
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex flex-col gap-3">
-                  <p className="text-sm text-amber-800 font-medium">
+                  <p className="text-sm text-amber-800">
                     목표를 <strong>{input} km</strong>으로 설정할까요?
                   </p>
                   <div className="flex gap-2">
@@ -131,19 +132,18 @@ export default function GoalPage() {
                   </div>
                 </div>
               )}
-            </div>
+            </>
           )}
 
           {/* 결과 */}
           {view === 'result' && goal && (
-            <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-4">
               <ProgressBar
                 value={goal.progressRate}
                 label={`달성률 ${goal.progressRate.toFixed(1)}%`}
                 achieved={`${goal.achievedDistanceKm.toFixed(1)} km`}
                 target={`${goal.targetDistanceKm} km`}
               />
-
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-bg rounded-xl p-4 text-center">
                   <p className="text-2xl font-bold text-black">{goal.achievedDistanceKm.toFixed(1)}</p>
@@ -154,9 +154,8 @@ export default function GoalPage() {
                   <p className="text-xs text-gray-400 mt-1">목표 km</p>
                 </div>
               </div>
-
               <button
-                onClick={handleEdit}
+                onClick={() => { setInput(String(goal.targetDistanceKm)); setView('form') }}
                 className="w-full border border-gray-200 rounded-xl py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
               >
                 수정
