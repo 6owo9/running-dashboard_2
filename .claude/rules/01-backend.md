@@ -47,21 +47,8 @@
 
 ---
 
-## GPX 파싱 관련
-- GPX 파일 파싱은 백엔드에서 처리한다.
-- 파싱 후 좌표(위도/경도) 배열을 DB에 저장한다.
-- 프론트엔드에는 파싱된 좌표 배열만 반환한다.
-- GPX 파싱은 직접 XML 파싱(javax.xml)으로 처리한다.
-- `trkpt` 요소가 0개인 경우 400 에러를 반환한다. (좌표 없는 GPX는 유효하지 않은 파일로 처리)
-- 파일 바이트는 한 번만 읽어 `ByteArrayInputStream`으로 재사용한다. InputStream을 두 번 직접 읽지 않는다.
-
----
-
-## 파일 업로드 관련
-- 파일 업로드는 `multipart/form-data` 방식으로 처리한다.
-- 허용 확장자: `.gpx` 만 허용한다. (jpg/png 업로드 기능은 현재 미구현)
-- 파일 크기 제한: 10MB 이하 (application.yml에서 `spring.servlet.multipart.max-file-size=10MB` 설정)
-- 업로드된 파일은 파싱 후 원본을 서버에 저장하지 않는다.
+## GPX 파싱 / 파일 업로드 관련
+- 상세 규칙은 `10-feature-gpx.md` 를 참고한다.
 
 ---
 

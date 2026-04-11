@@ -6,9 +6,12 @@
 
 ## 역할별 규칙
 역할별 작업 시 해당 규칙 파일을 추가로 참고한다:
-- 프론트엔드 작업 → `.claude/rules/frontend.md`
-- 백엔드 작업 → `.claude/rules/backend.md`
-- QA 작업 → `.claude/rules/qa.md`
+- 전체 워크플로우 통제 → `.claude/rules/00-pm.md`
+- 백엔드 작업 → `.claude/rules/01-backend.md`
+- 프론트엔드 작업 → `.claude/rules/02-frontend.md`
+- QA 작업 → `.claude/rules/03-qa.md`
+- GPX 파싱 작업 → `.claude/rules/10-feature-gpx.md`
+- 지도 시각화 작업 → `.claude/rules/11-feature-map.md`
 
 ---
 
