@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: running-dashboard_2
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
