@@ -1,29 +1,42 @@
-import { Upload, Target } from 'lucide-react'
+import { Upload, Activity } from 'lucide-react'
 
 interface HeaderProps {
   onUpload: () => void
-  onGoal: () => void
 }
 
-export default function Header({ onUpload, onGoal }: HeaderProps) {
+export default function Header({ onUpload }: HeaderProps) {
+  const now = new Date()
+  const dateStr = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일`
+  const dayName = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'][now.getDay()]
+
   return (
-    <header className="sticky top-0 z-40 flex items-center justify-between px-5 py-4 bg-card shadow-sm">
-      <span className="text-base font-bold tracking-tight">러닝 대시보드</span>
-      <div className="flex gap-2">
-        <button
-          onClick={onGoal}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium text-gray-500 hover:bg-gray-100 transition-colors"
-        >
-          <Target size={15} />
-          <span className="hidden sm:inline">목표</span>
-        </button>
-        <button
-          onClick={onUpload}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium bg-black text-white hover:bg-gray-800 transition-colors"
-        >
-          <Upload size={15} />
-          업로드
-        </button>
+    <header className="sticky top-0 z-40 border-b bg-card">
+      <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-primary text-primary-foreground">
+            <Activity size={20} />
+          </div>
+          <div>
+            <span className="text-xl font-bold text-foreground">러닝 대시보드</span>
+            <p className="text-xs text-muted-foreground">이번 달 목표를 향해 달려보세요</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="text-right hidden sm:block">
+            <p className="text-sm font-medium text-foreground">{dateStr}</p>
+            <p className="text-xs text-muted-foreground">{dayName}</p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={onUpload}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+            >
+              <Upload size={15} />
+              업로드
+            </button>
+          </div>
+        </div>
       </div>
     </header>
   )

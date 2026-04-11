@@ -2,7 +2,7 @@
 
 ## 역할
 - 담당: Spring Boot 기반 REST API 및 H2 DB 관리
-- 참고: `.claude/rules/global.md` 를 반드시 함께 적용한다
+- 참고: `.claude/CLAUDE.md` 반드시 함께 적용한다
 
 ## 데이터 영속성 (Data Persistence)
 - **H2 DB 설정:** `jdbc:h2:mem:testdb` 사용을 금지한다.

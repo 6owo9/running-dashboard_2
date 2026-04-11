@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -37,7 +39,9 @@ public class GoalService {
     }
 
     private double achievedDistance() {
-        return runningRecordRepository.findAll().stream()
+        LocalDate firstOfMonth = LocalDate.now().withDayOfMonth(1);
+        LocalDate today = LocalDate.now();
+        return runningRecordRepository.findByDateBetweenOrderByDateDesc(firstOfMonth, today).stream()
                 .mapToDouble(r -> r.getDistanceKm() != null ? r.getDistanceKm() : 0.0)
                 .sum();
     }

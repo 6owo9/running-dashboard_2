@@ -24,7 +24,6 @@ export default function GoalModal({ isOpen, onClose, goal, onSaved }: Props) {
     return () => { document.body.style.overflow = '' }
   }, [isOpen])
 
-  // 모달 열릴 때마다 뷰 동기화
   useEffect(() => {
     if (isOpen) {
       setView(goal ? 'result' : 'form')
@@ -67,24 +66,27 @@ export default function GoalModal({ isOpen, onClose, goal, onSaved }: Props) {
         onClick={e => e.stopPropagation()}
       >
         {/* 헤더 */}
-        <div className="flex items-center justify-between p-5 border-b border-gray-100">
+        <div className="flex items-center justify-between p-5 border-b border-border">
           <div className="flex items-center gap-2">
-            <Target size={16} />
-            <h2 className="font-semibold">목표 거리</h2>
+            <Target size={16} className="text-primary" />
+            <h2 className="font-semibold text-foreground">목표 거리</h2>
           </div>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-full">
+          <button
+            onClick={onClose}
+            className="p-1.5 hover:bg-accent rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+          >
             <X size={18} />
           </button>
         </div>
 
         <div className="p-5 flex flex-col gap-4">
-          {error && <p className="text-sm text-warning">{error}</p>}
+          {error && <p className="text-sm text-destructive">{error}</p>}
 
           {/* 입력 폼 */}
           {(view === 'form' || view === 'confirm') && (
             <>
               <div>
-                <label className="text-xs text-gray-400 font-medium">목표 거리 (km)</label>
+                <label className="text-xs text-muted-foreground font-medium">목표 거리 (km)</label>
                 <div className="flex items-center gap-2 mt-1">
                   <input
                     type="number"
@@ -94,16 +96,16 @@ export default function GoalModal({ isOpen, onClose, goal, onSaved }: Props) {
                     onChange={e => setInput(e.target.value)}
                     disabled={view === 'confirm'}
                     placeholder="예: 100"
-                    className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-black disabled:bg-gray-50 disabled:text-gray-400"
+                    className="flex-1 border border-border rounded-xl px-4 py-2.5 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:bg-muted disabled:text-muted-foreground transition-all"
                   />
-                  <span className="text-sm text-gray-400">km</span>
+                  <span className="text-sm text-muted-foreground">km</span>
                 </div>
               </div>
 
               {view === 'form' && (
                 <button
                   onClick={handleSaveClick}
-                  className="w-full bg-black text-white rounded-xl py-2.5 text-sm font-medium hover:bg-gray-800 transition-colors"
+                  className="w-full bg-primary text-primary-foreground rounded-xl py-2.5 text-sm font-medium hover:opacity-90 transition-opacity"
                 >
                   저장
                 </button>
@@ -118,14 +120,14 @@ export default function GoalModal({ isOpen, onClose, goal, onSaved }: Props) {
                     <button
                       onClick={handleConfirm}
                       disabled={saving}
-                      className="flex-1 bg-black text-white rounded-lg py-2 text-sm font-medium hover:bg-gray-800 disabled:opacity-50 transition-colors"
+                      className="flex-1 bg-primary text-primary-foreground rounded-lg py-2 text-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
                     >
                       {saving ? '저장 중...' : '확인'}
                     </button>
                     <button
                       onClick={() => setView('form')}
                       disabled={saving}
-                      className="flex-1 border border-gray-200 rounded-lg py-2 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                      className="flex-1 border border-border rounded-lg py-2 text-sm text-muted-foreground hover:bg-accent disabled:opacity-50 transition-colors"
                     >
                       취소
                     </button>
@@ -145,18 +147,18 @@ export default function GoalModal({ isOpen, onClose, goal, onSaved }: Props) {
                 target={`${goal.targetDistanceKm} km`}
               />
               <div className="grid grid-cols-2 gap-3">
-                <div className="bg-bg rounded-xl p-4 text-center">
-                  <p className="text-2xl font-bold text-black">{goal.achievedDistanceKm.toFixed(1)}</p>
-                  <p className="text-xs text-gray-400 mt-1">달성 km</p>
+                <div className="bg-muted rounded-xl p-4 text-center">
+                  <p className="text-2xl font-bold text-foreground">{goal.achievedDistanceKm.toFixed(1)}</p>
+                  <p className="text-xs text-muted-foreground mt-1">달성 km</p>
                 </div>
-                <div className="bg-bg rounded-xl p-4 text-center">
-                  <p className="text-2xl font-bold text-black">{goal.targetDistanceKm}</p>
-                  <p className="text-xs text-gray-400 mt-1">목표 km</p>
+                <div className="bg-muted rounded-xl p-4 text-center">
+                  <p className="text-2xl font-bold text-foreground">{goal.targetDistanceKm}</p>
+                  <p className="text-xs text-muted-foreground mt-1">목표 km</p>
                 </div>
               </div>
               <button
                 onClick={() => { setInput(String(goal.targetDistanceKm)); setView('form') }}
-                className="w-full border border-gray-200 rounded-xl py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+                className="w-full border border-border rounded-xl py-2.5 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
               >
                 수정
               </button>

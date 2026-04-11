@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { X, Upload, CheckCircle, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react'
+import { X, Upload, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, Clock, Activity } from 'lucide-react'
 import { uploadFile } from '../api/runningApi'
 import type { RunningRecord } from '../api/runningApi'
 
@@ -11,10 +11,15 @@ function fmtDuration(s: number) {
     ? `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
     : `${m}:${String(sec).padStart(2, '0')}`
 }
+
 function fmtPace(p: number) {
   const min = Math.floor(p)
   const sec = Math.round((p - min) * 60)
   return `${min}'${String(sec).padStart(2, '0')}"`
+}
+
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', weekday: 'short' })
 }
 
 function Calendar({
@@ -39,17 +44,23 @@ function Calendar({
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <button onClick={() => setView(new Date(year, month - 1))} className="p-1 hover:bg-gray-100 rounded-full">
+        <button
+          onClick={() => setView(new Date(year, month - 1))}
+          className="p-1.5 hover:bg-accent rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+        >
           <ChevronLeft size={15} />
         </button>
-        <span className="text-sm font-semibold">{year}년 {month + 1}월</span>
-        <button onClick={() => setView(new Date(year, month + 1))} className="p-1 hover:bg-gray-100 rounded-full">
+        <span className="text-sm font-semibold text-foreground">{year}년 {month + 1}월</span>
+        <button
+          onClick={() => setView(new Date(year, month + 1))}
+          className="p-1.5 hover:bg-accent rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+        >
           <ChevronRight size={15} />
         </button>
       </div>
       <div className="grid grid-cols-7 gap-1 text-center mb-1">
         {['일', '월', '화', '수', '목', '금', '토'].map(d => (
-          <span key={d} className="text-xs text-gray-400">{d}</span>
+          <span key={d} className="text-xs text-muted-foreground">{d}</span>
         ))}
       </div>
       <div className="grid grid-cols-7 gap-1 text-center">
@@ -63,11 +74,17 @@ function Calendar({
               key={i}
               onClick={() => has && onSelect(dateStr)}
               className={`relative flex flex-col items-center justify-center h-8 rounded-lg text-sm transition-colors ${
-                sel ? 'bg-black text-white' : has ? 'hover:bg-gray-100 font-medium' : 'text-gray-300 cursor-default'
+                sel
+                  ? 'bg-primary text-primary-foreground'
+                  : has
+                  ? 'hover:bg-accent text-foreground font-medium'
+                  : 'text-muted-foreground/40 cursor-default'
               }`}
             >
               {day}
-              {has && <span className={`absolute bottom-0.5 w-1 h-1 rounded-full ${sel ? 'bg-white' : 'bg-primary'}`} />}
+              {has && (
+                <span className={`absolute bottom-0.5 w-1 h-1 rounded-full ${sel ? 'bg-primary-foreground' : 'bg-green-500'}`} />
+              )}
             </button>
           )
         })}
@@ -130,9 +147,12 @@ export default function UploadModal({ isOpen, onClose, onUploaded, records }: Pr
         onClick={e => e.stopPropagation()}
       >
         {/* 헤더 */}
-        <div className="flex items-center justify-between p-5 border-b border-gray-100 sticky top-0 bg-card z-10">
-          <h2 className="font-semibold">기록 업로드</h2>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-full">
+        <div className="flex items-center justify-between p-5 border-b border-border sticky top-0 bg-card z-10">
+          <h2 className="font-semibold text-foreground">기록 업로드</h2>
+          <button
+            onClick={onClose}
+            className="p-1.5 hover:bg-accent rounded-lg text-muted-foreground hover:text-foreground transition-colors"
+          >
             <X size={18} />
           </button>
         </div>
@@ -144,8 +164,8 @@ export default function UploadModal({ isOpen, onClose, onUploaded, records }: Pr
             onDragLeave={() => setDragging(false)}
             onDrop={e => { e.preventDefault(); setDragging(false); e.dataTransfer.files[0] && handleFile(e.dataTransfer.files[0]) }}
             onClick={() => !uploading && inputRef.current?.click()}
-            className={`flex flex-col items-center justify-center gap-3 cursor-pointer rounded-2xl border-2 border-dashed py-10 transition-colors ${
-              dragging ? 'border-primary bg-green-50' : 'border-gray-200 hover:border-gray-300'
+            className={`flex flex-col items-center justify-center gap-3 cursor-pointer rounded-xl border-2 border-dashed py-10 transition-colors ${
+              dragging ? 'border-primary bg-accent' : 'border-border hover:border-muted-foreground'
             }`}
           >
             <input
@@ -156,27 +176,29 @@ export default function UploadModal({ isOpen, onClose, onUploaded, records }: Pr
               onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])}
               disabled={uploading}
             />
-            <Upload size={28} className={dragging ? 'text-primary' : 'text-gray-300'} />
+            <Upload size={28} className={dragging ? 'text-primary' : 'text-muted-foreground'} />
             <div className="text-center">
-              <p className="text-sm font-medium text-gray-600">
+              <p className="text-sm font-medium text-foreground">
                 {uploading ? '업로드 중...' : '드래그하거나 클릭해서 선택'}
               </p>
-              <p className="text-xs text-gray-400 mt-1">.gpx · .jpg · .png · 최대 10MB</p>
+              <p className="text-xs text-muted-foreground mt-1">.gpx · .jpg · .png · 최대 10MB</p>
             </div>
           </div>
 
-          {/* 결과 */}
+          {/* 에러 */}
           {error && (
-            <div className="flex items-start gap-3 bg-red-50 rounded-xl p-4">
-              <AlertCircle size={18} className="text-warning shrink-0 mt-0.5" />
-              <p className="text-sm text-gray-700">{error}</p>
+            <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl p-4">
+              <AlertCircle size={18} className="text-destructive shrink-0 mt-0.5" />
+              <p className="text-sm text-foreground">{error}</p>
             </div>
           )}
+
+          {/* 업로드 결과 */}
           {result && (
-            <div className="bg-white rounded-xl p-4 shadow-sm">
+            <div className="bg-muted rounded-xl p-4">
               <div className="flex items-center gap-2 mb-3">
-                <CheckCircle size={16} className="text-primary" />
-                <span className="text-sm font-semibold">{result.title}</span>
+                <CheckCircle size={16} className="text-green-500" />
+                <span className="text-sm font-semibold text-foreground">{result.title}</span>
               </div>
               <div className="grid grid-cols-3 gap-2">
                 {[
@@ -184,53 +206,87 @@ export default function UploadModal({ isOpen, onClose, onUploaded, records }: Pr
                   { val: result.durationSeconds ? fmtDuration(result.durationSeconds) : '-', unit: '시간' },
                   { val: result.paceMinPerKm ? fmtPace(result.paceMinPerKm) : '-', unit: '페이스' },
                 ].map(({ val, unit }) => (
-                  <div key={unit} className="bg-bg rounded-xl p-3 text-center">
-                    <p className="text-lg font-bold text-black">{val}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{unit}</p>
+                  <div key={unit} className="bg-card rounded-xl p-3 text-center border border-border">
+                    <p className="text-lg font-bold text-foreground">{val}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{unit}</p>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* 달력 + 기록 목록 */}
-          <div className="border-t border-gray-100 pt-4">
+          {/* 달력 */}
+          <div className="border-t border-border pt-4">
             <Calendar records={records} selected={selectedDate} onSelect={setSelectedDate} />
           </div>
 
           {/* 기록 목록 */}
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
                 {selectedDate ?? '전체 기록'}
               </p>
               {selectedDate && (
-                <button onClick={() => setSelectedDate(null)} className="text-xs text-gray-400 hover:text-black">
+                <button
+                  onClick={() => setSelectedDate(null)}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
                   전체 보기
                 </button>
               )}
             </div>
             {filtered.length === 0 ? (
-              <p className="text-sm text-gray-400">기록이 없습니다.</p>
+              <p className="text-sm text-muted-foreground">기록이 없습니다.</p>
             ) : (
-              <ul className="flex flex-col divide-y divide-gray-100">
+              <div className="space-y-2">
                 {filtered.map(r => (
-                  <li
+                  <div
                     key={r.id}
-                    className="flex justify-between items-center py-3 cursor-pointer hover:bg-gray-50 rounded-xl px-2 -mx-2 transition-colors"
                     onClick={() => setSelectedDate(r.date)}
+                    className="p-3 rounded-lg border border-border cursor-pointer transition-all hover:shadow-sm hover:border-primary/50"
                   >
-                    <div>
-                      <p className="text-sm font-medium text-black">{r.title}</p>
-                      <p className="text-xs text-gray-400">{r.date}</p>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-foreground">{formatDate(r.date)}</span>
+                      <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full truncate max-w-32">
+                        {r.title}
+                      </span>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-primary">{r.distanceKm.toFixed(1)} km</p>
-                      {r.paceMinPerKm && <p className="text-xs text-gray-400">{fmtPace(r.paceMinPerKm)}/km</p>}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <div className="p-1 rounded bg-muted text-primary">
+                          <Activity size={11} />
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">거리</p>
+                          <p className="text-xs font-semibold text-foreground">{r.distanceKm.toFixed(1)} km</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="p-1 rounded bg-muted text-primary">
+                          <Clock size={11} />
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">시간</p>
+                          <p className="text-xs font-semibold text-foreground">
+                            {r.durationSeconds ? fmtDuration(r.durationSeconds) : '-'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="p-1 rounded bg-muted text-primary flex items-center justify-center">
+                          <span className="text-[10px] font-bold">P</span>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">페이스</p>
+                          <p className="text-xs font-semibold text-foreground">
+                            {r.paceMinPerKm ? fmtPace(r.paceMinPerKm) : '-'}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                  </li>
+                  </div>
                 ))}
-              </ul>
+              </div>
             )}
           </div>
         </div>

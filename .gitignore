@@ -1,0 +1,19 @@
+# H2 Database files
+backend/data/
+
+# Node
+node_modules/
+dist/
+
+# Build output
+frontend/dist/
+backend/build/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
