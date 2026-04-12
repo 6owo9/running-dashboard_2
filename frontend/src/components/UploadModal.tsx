@@ -170,7 +170,7 @@ export default function UploadModal({ isOpen, onClose, onUploaded, records }: Pr
             <input
               ref={inputRef}
               type="file"
-              accept=".gpx"
+              accept=".gpx,application/gpx+xml,application/xml,text/xml"
               className="absolute inset-0 opacity-0 w-full h-full cursor-pointer disabled:cursor-default z-10"
               onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])}
               disabled={uploading}
