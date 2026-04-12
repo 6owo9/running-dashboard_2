@@ -160,20 +160,18 @@ export default function UploadModal({ isOpen, onClose, onUploaded, records }: Pr
         <div className="p-5 flex flex-col gap-4">
           {/* 업로드 영역 */}
           <label
-            htmlFor="gpx-upload"
             onDragOver={e => { e.preventDefault(); setDragging(true) }}
             onDragLeave={() => setDragging(false)}
             onDrop={e => { e.preventDefault(); setDragging(false); e.dataTransfer.files[0] && handleFile(e.dataTransfer.files[0]) }}
-            className={`flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed py-10 transition-colors ${
+            className={`relative flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed py-10 transition-colors ${
               uploading ? 'cursor-default' : 'cursor-pointer'
             } ${dragging ? 'border-primary bg-accent' : 'border-border hover:border-muted-foreground'}`}
           >
             <input
-              id="gpx-upload"
               ref={inputRef}
               type="file"
               accept=".gpx"
-              className="hidden"
+              className="absolute inset-0 opacity-0 w-full h-full cursor-pointer disabled:cursor-default"
               onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])}
               disabled={uploading}
             />
