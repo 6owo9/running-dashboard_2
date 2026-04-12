@@ -22,16 +22,6 @@ import java.util.List;
 public class GpxParserService {
 
     public ParsedGpxData parse(MultipartFile file) {
-        String filename = file.getOriginalFilename();
-        if (filename == null || filename.isBlank()) {
-            throw new IllegalArgumentException("파일명이 없습니다.");
-        }
-
-        int dotIndex = filename.lastIndexOf(".");
-        if (dotIndex == -1 || !filename.substring(dotIndex).toLowerCase().equals(".gpx")) {
-            throw new IllegalArgumentException("허용되지 않는 파일 형식입니다. (.gpx만 허용)");
-        }
-
         byte[] bytes;
         try {
             bytes = file.getBytes();

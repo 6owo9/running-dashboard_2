@@ -159,19 +159,20 @@ export default function UploadModal({ isOpen, onClose, onUploaded, records }: Pr
 
         <div className="p-5 flex flex-col gap-4">
           {/* 업로드 영역 */}
-          <div
+          <label
+            htmlFor="gpx-upload"
             onDragOver={e => { e.preventDefault(); setDragging(true) }}
             onDragLeave={() => setDragging(false)}
             onDrop={e => { e.preventDefault(); setDragging(false); e.dataTransfer.files[0] && handleFile(e.dataTransfer.files[0]) }}
-            onClick={() => !uploading && inputRef.current?.click()}
-            className={`flex flex-col items-center justify-center gap-3 cursor-pointer rounded-xl border-2 border-dashed py-10 transition-colors ${
-              dragging ? 'border-primary bg-accent' : 'border-border hover:border-muted-foreground'
-            }`}
+            className={`flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed py-10 transition-colors ${
+              uploading ? 'cursor-default' : 'cursor-pointer'
+            } ${dragging ? 'border-primary bg-accent' : 'border-border hover:border-muted-foreground'}`}
           >
             <input
+              id="gpx-upload"
               ref={inputRef}
               type="file"
-              accept=".gpx,application/gpx+xml,application/xml,text/xml"
+              accept=".gpx"
               className="hidden"
               onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])}
               disabled={uploading}
@@ -183,7 +184,7 @@ export default function UploadModal({ isOpen, onClose, onUploaded, records }: Pr
               </p>
               <p className="text-xs text-muted-foreground mt-1">.gpx · 최대 10MB</p>
             </div>
-          </div>
+          </label>
 
           {/* 에러 */}
           {error && (

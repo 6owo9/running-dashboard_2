@@ -27,8 +27,13 @@ public class RunningRecordService {
 
     public RunningRecordResponse upload(MultipartFile file) {
         String filename = file.getOriginalFilename();
-        int dotIndex = filename.lastIndexOf(".");
-        String title = (dotIndex != -1) ? filename.substring(0, dotIndex) : filename;
+        String title;
+        if (filename == null || filename.isBlank()) {
+            title = "run_" + LocalDate.now();
+        } else {
+            int dotIndex = filename.lastIndexOf(".");
+            title = (dotIndex != -1) ? filename.substring(0, dotIndex) : filename;
+        }
 
         if (runningRecordRepository.existsByTitle(title)) {
             throw new IllegalArgumentException("이미 존재하는 기록입니다: " + title);
