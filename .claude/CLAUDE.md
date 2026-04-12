@@ -108,7 +108,7 @@
 | 패키지 매니저 | pnpm |
 | 지도 | Leaflet.js |
 | 백엔드 | Java 17, Spring Boot 3.x, Spring Data JPA |
-| DB | H2 File (`jdbc:h2:file:./data/runningdb`) |
+| DB | H2 In-Memory (`jdbc:h2:mem:runningdb`) |
 | 빌드 도구 | Gradle |
 | 배포 | Render.com |
 

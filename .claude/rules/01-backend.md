@@ -5,9 +5,8 @@
 - 참고: `.claude/CLAUDE.md` 반드시 함께 적용한다
 
 ## 데이터 영속성 (Data Persistence)
-- **H2 DB 설정:** `jdbc:h2:mem:testdb` 사용을 금지한다.
-- 반드시 로컬 파일 시스템을 사용하는 `jdbc:h2:file:./data/runningdb` 방식을 사용하도록 `application.yml`을 수정한다.
-- 서버 재시작 시에도 테이블 구조와 데이터가 유지되도록 `hibernate.ddl-auto: update` 설정을 적용한다.
+- H2 In-Memory(`jdbc:h2:mem:runningdb;DB_CLOSE_DELAY=-1`) 사용. Render.com 파일시스템이 ephemeral이라 File 모드와 동일하게 재시작 시 초기화됨.
+- `hibernate.ddl-auto: create-drop` 적용.
 
 ## 🔄 API 데이터 정합성
 - 프론트엔드에서 새로고침 시 `GET` 요청을 보낼 때, DB에서 최신 데이터를 정확히 가져오는지 쿼리 로그를 확인한다.
