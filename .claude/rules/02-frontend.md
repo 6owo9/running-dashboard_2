@@ -17,7 +17,7 @@
 ## 컴포넌트 관련
 - 재사용 가능한 컴포넌트는 반드시 분리한다.
 - 페이지는 페이지당 하나의 파일로 관리한다.
-- 공통 컴포넌트는 `src/components/common/` 폴더에 정리한다.
+- 공통 컴포넌트는 `src/components/` 폴더에 정리한다.
 
 ---
 
@@ -37,8 +37,7 @@
 
 | 대상 | 규칙 | 예시 |
 |------|------|------|
-| 컴포넌트 파일 | PascalCase | `MapPage.tsx`, `GoalCard.tsx` |
-| 공통 요소 폴더 | kebab-case | `common/`, `running-card/` |
+| 컴포넌트 파일 | PascalCase | `MainPage.tsx`, `GoalModal.tsx` |
 | 일반 유틸/훅 | camelCase | `useGoal.ts`, `formatDate.ts` |
 | API 호출 파일 | camelCase | `runningApi.ts`, `goalApi.ts` |
 
@@ -61,8 +60,13 @@
 
 ## 담당 화면
 
-| 화면 | 파일 | 주요 기능 |
-|------|------|----------|
-| 지도 | `MapPage.tsx` | GPX 경로 지도 표출, 오늘/일주일 토글 |
-| 기록 업로드 | `UploadPage.tsx` | 캘린더, 파일 업로드, 기록 요약 |
-| 목표치 | `GoalPage.tsx` | 목표 설정, 프로그레스 바 |
+| 화면 | 파일 | 비고 |
+|------|------|------|
+| 메인 (단일 페이지) | `pages/MainPage.tsx` | 지도, 기록 목록, 통계, 캘린더 통합 |
+| 업로드 | `components/UploadModal.tsx` | Modal 방식, 캘린더·파일 업로드·기록 목록 포함 |
+| 목표 설정 | `components/GoalModal.tsx` | Modal 방식, 목표 설정·달성률 표시 |
+| 통계 카드 | `components/StatCard.tsx` | 재사용 카드 컴포넌트 |
+| 진행률 바 | `components/ProgressBar.tsx` | 목표 달성률 시각화 |
+| 헤더 | `components/Header.tsx` | 앱 상단 네비게이션 |
+
+- 라우팅 없음. 단일 경로(`/`)에서 Modal로 화면 전환.

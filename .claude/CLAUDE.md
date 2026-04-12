@@ -107,9 +107,8 @@
 | 스타일 | Tailwind CSS |
 | 패키지 매니저 | pnpm |
 | 지도 | Leaflet.js |
-| 차트 | Chart.js |
 | 백엔드 | Java 17, Spring Boot 3.x, Spring Data JPA |
-| DB | H2 In-Memory |
+| DB | H2 File (`jdbc:h2:file:./data/runningdb`) |
 | 빌드 도구 | Gradle |
 | 배포 | Render.com |
 
@@ -122,16 +121,16 @@ running-dashboard/
 ├── .claude/
 │   ├── CLAUDE.md
 │   └── rules/
-│       ├── frontend.md
-│       ├── backend.md
-│       └── qa.md
 ├── frontend/                → Vite + TypeScript + Tailwind
 │   ├── src/
-│   │   ├── components/      → 공통 컴포넌트
+│   │   ├── components/
+│   │   │   ├── Header.tsx       → 앱 헤더
+│   │   │   ├── StatCard.tsx     → 통계 카드
+│   │   │   ├── ProgressBar.tsx  → 목표 달성률 바
+│   │   │   ├── UploadModal.tsx  → 업로드 Modal (캘린더 포함)
+│   │   │   └── GoalModal.tsx    → 목표 설정 Modal
 │   │   ├── pages/
-│   │   │   ├── MapPage.tsx      → 지도 화면
-│   │   │   ├── UploadPage.tsx   → 기록 업로드 화면
-│   │   │   └── GoalPage.tsx     → 목표치 화면
+│   │   │   └── MainPage.tsx     → 단일 메인 페이지 (지도·기록·통계 통합)
 │   │   └── api/             → 백엔드 API 호출
 │   └── package.json
 └── backend/                 → Spring Boot + H2
@@ -143,8 +142,7 @@ running-dashboard/
         │   ├── entity/          → JPA Entity
         │   └── dto/             → 요청/응답 객체
         └── resources/
-            ├── application.yml
-            └── data.sql         → 초기 샘플 데이터
+            └── application.yml
 ```
 
 ## 로컬 실행 방법
@@ -163,8 +161,10 @@ cd backend
 ```
 
 ## 주요 화면
-| 화면 | 경로 | 설명 |
-|------|------|------|
-| 지도 | `/` | GPX 기반 러닝 경로 시각화 |
-| 기록 업로드 | `/upload` | 파일 업로드 및 캘린더 |
-| 목표치 | `/goal` | 목표 설정 및 달성률 |
+라우팅 없음. 단일 경로(`/`)에서 Modal로 화면 전환한다.
+
+| 화면 | 진입 방법 | 설명 |
+|------|----------|------|
+| 메인 | `/` | 지도·기록 목록·통계·캘린더 통합 화면 |
+| 기록 업로드 | 헤더 업로드 버튼 | GPX 파일 업로드, 캘린더, 기록 목록 |
+| 목표 설정 | 목표 달성률 카드 수정 버튼 | 목표 거리 설정 및 달성률 확인 |

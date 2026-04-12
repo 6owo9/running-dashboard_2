@@ -27,7 +27,7 @@
 
 ## 파일 업로드 관련
 - 파일 업로드는 `multipart/form-data` 방식으로 처리한다.
-- 허용 확장자: `.gpx`, `.jpg`, `.png`
+- 허용 확장자: `.gpx`만 허용 (확장자 체크 없이 XML 파싱으로 GPX 여부 검증)
 - 파일 크기 제한: 10MB 이하
 - 업로드된 파일은 파싱 후 원본을 서버에 저장하지 않는다.
 
@@ -50,7 +50,8 @@
 |--------|-----|------|
 | POST | `/api/running-records/upload` | GPX 파일 업로드 및 파싱 |
 | GET | `/api/running-records` | 전체 러닝 기록 조회 |
-| GET | `/api/running-records?period=today` | 오늘/일주일 기록 조회 |
+| GET | `/api/running-records?period=today\|week` | 오늘/일주일 기록 조회 |
+| DELETE | `/api/running-records/{id}` | 러닝 기록 삭제 |
 | POST | `/api/goals` | 목표 설정 |
 | GET | `/api/goals/current` | 현재 목표 및 달성률 조회 |
 | GET | `/api/stats/summary` | 전체 통계 요약 |
