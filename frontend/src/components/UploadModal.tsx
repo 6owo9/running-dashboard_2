@@ -171,7 +171,7 @@ export default function UploadModal({ isOpen, onClose, onUploaded, records }: Pr
             <input
               ref={inputRef}
               type="file"
-              accept=".gpx,.jpg,.png"
+              accept=".gpx,application/gpx+xml,application/xml,text/xml"
               className="hidden"
               onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])}
               disabled={uploading}
@@ -181,7 +181,7 @@ export default function UploadModal({ isOpen, onClose, onUploaded, records }: Pr
               <p className="text-sm font-medium text-foreground">
                 {uploading ? '업로드 중...' : '드래그하거나 클릭해서 선택'}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">.gpx · .jpg · .png · 최대 10MB</p>
+              <p className="text-xs text-muted-foreground mt-1">.gpx · 최대 10MB</p>
             </div>
           </div>
 

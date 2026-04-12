@@ -21,8 +21,6 @@ import java.util.List;
 @Service
 public class GpxParserService {
 
-    private static final List<String> ALLOWED_EXTENSIONS = List.of(".gpx", ".jpg", ".png");
-
     public ParsedGpxData parse(MultipartFile file) {
         String filename = file.getOriginalFilename();
         if (filename == null || filename.isBlank()) {
@@ -30,17 +28,8 @@ public class GpxParserService {
         }
 
         int dotIndex = filename.lastIndexOf(".");
-        if (dotIndex == -1) {
-            throw new IllegalArgumentException("확장자가 없는 파일입니다.");
-        }
-        String ext = filename.substring(dotIndex).toLowerCase();
-
-        if (!ALLOWED_EXTENSIONS.contains(ext)) {
-            throw new IllegalArgumentException("허용되지 않는 파일 형식입니다. (.gpx, .jpg, .png만 허용)");
-        }
-
-        if (!ext.equals(".gpx")) {
-            return new ParsedGpxData(List.of(), null, 0.0, LocalDate.now());
+        if (dotIndex == -1 || !filename.substring(dotIndex).toLowerCase().equals(".gpx")) {
+            throw new IllegalArgumentException("허용되지 않는 파일 형식입니다. (.gpx만 허용)");
         }
 
         byte[] bytes;
