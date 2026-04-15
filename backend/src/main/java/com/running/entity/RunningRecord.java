@@ -35,14 +35,18 @@ public class RunningRecord {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
+    @Column
+    private Long userId;
+
     @Builder
     public RunningRecord(String title, LocalDate date, Double distanceKm,
-                         Integer durationSeconds, String coordinates) {
+                         Integer durationSeconds, String coordinates, Long userId) {
         this.title = title;
         this.date = date;
         this.distanceKm = distanceKm;
         this.durationSeconds = durationSeconds;
         this.coordinates = coordinates;
+        this.userId = userId;
         this.createdAt = LocalDateTime.now();
     }
 }

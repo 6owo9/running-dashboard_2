@@ -9,11 +9,12 @@ interface Props {
   onClose: () => void
   goal: Goal | null
   onSaved: () => void
+  token: string
 }
 
 type View = 'form' | 'confirm' | 'result'
 
-export default function GoalModal({ isOpen, onClose, goal, onSaved }: Props) {
+export default function GoalModal({ isOpen, onClose, goal, onSaved, token }: Props) {
   const [view, setView] = useState<View>(goal ? 'result' : 'form')
   const [input, setInput] = useState('')
   const [saving, setSaving] = useState(false)
@@ -47,7 +48,7 @@ export default function GoalModal({ isOpen, onClose, goal, onSaved }: Props) {
   const handleConfirm = async () => {
     setSaving(true)
     try {
-      await saveGoal(parseFloat(input))
+      await saveGoal(parseFloat(input), token)
       onSaved()
       onClose()
     } catch (e: unknown) {

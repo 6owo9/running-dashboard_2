@@ -20,16 +20,23 @@ export async function getRecords(period?: 'today' | 'week'): Promise<RunningReco
   return handleResponse<RunningRecord[]>(await fetch(url))
 }
 
-export async function uploadFile(file: File): Promise<RunningRecord> {
+export async function uploadFile(file: File, token: string): Promise<RunningRecord> {
   const form = new FormData()
   form.append('file', file)
   return handleResponse<RunningRecord>(
-    await fetch('/api/running-records/upload', { method: 'POST', body: form })
+    await fetch('/api/running-records/upload', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+    })
   )
 }
 
-export async function deleteRecord(id: number): Promise<void> {
+export async function deleteRecord(id: number, token: string): Promise<void> {
   return handleResponse<void>(
-    await fetch(`/api/running-records/${id}`, { method: 'DELETE' })
+    await fetch(`/api/running-records/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    })
   )
 }

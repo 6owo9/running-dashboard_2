@@ -7,12 +7,15 @@ import StatCard from '../components/StatCard'
 import ProgressBar from '../components/ProgressBar'
 import UploadModal from '../components/UploadModal'
 import GoalModal from '../components/GoalModal'
+import AuthModal from '../components/AuthModal'
+import ProfileModal from '../components/ProfileModal'
 import { getRecords, deleteRecord } from '../api/runningApi'
 import type { RunningRecord } from '../api/runningApi'
 import { getGoal } from '../api/goalApi'
 import type { Goal } from '../api/goalApi'
 import { getSummary } from '../api/statsApi'
 import type { StatsSummary } from '../api/statsApi'
+import { useAuth } from '../hooks/useAuth'
 
 type Period = 'today' | 'week'
 
@@ -127,8 +130,13 @@ function CalendarIcon() {
 }
 
 export default function MainPage() {
+  const { token, user, isLoggedIn, login, logout, updateUser } = useAuth()
+
   const [uploadOpen, setUploadOpen] = useState(false)
   const [goalOpen, setGoalOpen] = useState(false)
+  const [authOpen, setAuthOpen] = useState(false)
+  const [authInitTab, setAuthInitTab] = useState<'login' | 'signup'>('login')
+  const [profileOpen, setProfileOpen] = useState(false)
   const [period, setPeriod] = useState<Period>('week')
 
   const [summary, setSummary] = useState<StatsSummary | null>(null)
@@ -170,12 +178,12 @@ export default function MainPage() {
 
   const refresh = useCallback(async () => {
     try {
-      const [sum, recs, g] = await Promise.all([getSummary(), getRecords(), getGoal()])
+      const [sum, recs, g] = await Promise.all([getSummary(), getRecords(), getGoal(token)])
       setSummary(sum)
       setAllRecords(recs)
       setGoal(g)
     } catch { /* silent */ }
-  }, [])
+  }, [token])
 
   useEffect(() => { refresh() }, [refresh])
 
@@ -234,7 +242,15 @@ export default function MainPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header onUpload={() => setUploadOpen(true)} />
+      <Header
+        onUpload={() => setUploadOpen(true)}
+        isLoggedIn={isLoggedIn}
+        user={user}
+        onLoginClick={() => { setAuthInitTab('login'); setAuthOpen(true) }}
+        onSignupClick={() => { setAuthInitTab('signup'); setAuthOpen(true) }}
+        onProfileClick={() => setProfileOpen(true)}
+        onLogout={() => { logout(); setGoal(null) }}
+      />
 
       <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
 
@@ -249,7 +265,7 @@ export default function MainPage() {
                 목표 달성률
               </h2>
               <button
-                onClick={() => setGoalOpen(true)}
+                onClick={() => isLoggedIn ? setGoalOpen(true) : (setAuthInitTab('login'), setAuthOpen(true))}
                 className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded-md hover:bg-accent transition-colors"
               >
                 {goal ? '수정' : '설정'}
@@ -381,18 +397,20 @@ export default function MainPage() {
                         <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full truncate max-w-24">
                           {r.title}
                         </span>
-                        <button
-                          onClick={async (e) => {
-                            e.stopPropagation()
-                            if (!window.confirm(`"${r.title}" 기록을 삭제할까요?`)) return
-                            await deleteRecord(r.id)
-                            if (focusedId === r.id) setFocusedId(null)
-                            await refresh()
-                          }}
-                          className="p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                        >
-                          <Trash2 size={12} />
-                        </button>
+                        {isLoggedIn && (
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation()
+                              if (!window.confirm(`"${r.title}" 기록을 삭제할까요?`)) return
+                              await deleteRecord(r.id, token!)
+                              if (focusedId === r.id) setFocusedId(null)
+                              await refresh()
+                            }}
+                            className="p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        )}
                       </div>
                     </div>
                     <div className="grid grid-cols-3 gap-2">
@@ -441,13 +459,32 @@ export default function MainPage() {
         onClose={() => setUploadOpen(false)}
         onUploaded={refresh}
         records={allRecords}
+        token={token!}
       />
-      <GoalModal
-        isOpen={goalOpen}
-        onClose={() => setGoalOpen(false)}
-        goal={goal}
-        onSaved={refresh}
+      {isLoggedIn && (
+        <GoalModal
+          isOpen={goalOpen}
+          onClose={() => setGoalOpen(false)}
+          goal={goal}
+          onSaved={refresh}
+          token={token!}
+        />
+      )}
+      <AuthModal
+        isOpen={authOpen}
+        onClose={() => setAuthOpen(false)}
+        onSuccess={(t, u) => { login(t, u); setAuthOpen(false) }}
+        initialTab={authInitTab}
       />
+      {isLoggedIn && user && (
+        <ProfileModal
+          isOpen={profileOpen}
+          onClose={() => setProfileOpen(false)}
+          token={token!}
+          user={user}
+          onUpdated={updateUser}
+        />
+      )}
     </div>
   )
 }

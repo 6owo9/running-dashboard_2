@@ -23,9 +23,13 @@ public class Goal {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(nullable = false)
+    private Long userId;
+
     @Builder
-    public Goal(Double targetDistanceKm) {
+    public Goal(Double targetDistanceKm, Long userId) {
         this.targetDistanceKm = targetDistanceKm;
+        this.userId = userId;
         this.createdAt = LocalDateTime.now();
     }
 }

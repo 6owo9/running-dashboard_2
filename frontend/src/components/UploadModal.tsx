@@ -98,9 +98,10 @@ interface Props {
   onClose: () => void
   onUploaded: () => void
   records: RunningRecord[]
+  token: string
 }
 
-export default function UploadModal({ isOpen, onClose, onUploaded, records }: Props) {
+export default function UploadModal({ isOpen, onClose, onUploaded, records, token }: Props) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [result, setResult] = useState<RunningRecord | null>(null)
@@ -126,7 +127,7 @@ export default function UploadModal({ isOpen, onClose, onUploaded, records }: Pr
     setError(null)
     setResult(null)
     try {
-      const uploaded = await uploadFile(file)
+      const uploaded = await uploadFile(file, token)
       setResult(uploaded)
       onUploaded()
     } catch (e: unknown) {

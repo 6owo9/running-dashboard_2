@@ -10,5 +10,6 @@ public interface RunningRecordRepository extends JpaRepository<RunningRecord, Lo
     List<RunningRecord> findByDateOrderByCreatedAtDesc(LocalDate date);
     List<RunningRecord> findByDateBetweenOrderByDateDesc(LocalDate start, LocalDate end);
     List<RunningRecord> findAllByOrderByDateDesc();
-    boolean existsByTitle(String title);
+    boolean existsByTitleAndUserId(String title, Long userId);
+    List<RunningRecord> findByUserIdAndDateBetweenOrderByDateDesc(Long userId, LocalDate start, LocalDate end);
 }

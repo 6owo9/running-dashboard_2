@@ -44,13 +44,25 @@
 | `entity/` | JPA Entity 클래스 |
 | `dto/` | 요청/응답 객체 |
 
+## 인증 관련
+- JWT 토큰을 `Authorization: Bearer <token>` 헤더로 전달받아 검증한다.
+- `SecurityConfig`에서 공개/인증 필요 경로를 분리한다.
+- 공개 경로: `GET /api/running-records/**`, `GET /api/stats/**`, `GET /api/goals/current`, `POST /api/auth/**`
+- 인증 필요 경로: `POST /api/running-records/upload`, `DELETE /api/running-records/{id}`, `POST /api/goals`, `/api/users/**`
+- `GET /api/goals/current`는 공개이지만, 인증 토큰이 있을 때만 해당 유저의 목표를 반환하고 없으면 null을 반환한다.
+
 ## 담당 API
-| Method | URL | 설명 |
-|--------|-----|------|
-| POST | `/api/running-records/upload` | GPX 파일 업로드 및 파싱 |
-| GET | `/api/running-records` | 전체 러닝 기록 조회 |
-| GET | `/api/running-records?period=today\|week` | 오늘/일주일 기록 조회 |
-| DELETE | `/api/running-records/{id}` | 러닝 기록 삭제 |
-| POST | `/api/goals` | 목표 설정 |
-| GET | `/api/goals/current` | 현재 목표 및 달성률 조회 |
-| GET | `/api/stats/summary` | 전체 통계 요약 |
+| Method | URL | 인증 | 설명 |
+|--------|-----|------|------|
+| POST | `/api/auth/signup` | 불필요 | 회원가입 (JWT 즉시 발급) |
+| POST | `/api/auth/login` | 불필요 | 로그인 (JWT 발급) |
+| GET | `/api/users/me` | 필요 | 내 프로필 조회 |
+| PUT | `/api/users/me` | 필요 | 닉네임·프로필 이미지 수정 |
+| PUT | `/api/users/me/password` | 필요 | 비밀번호 변경 |
+| POST | `/api/running-records/upload` | 필요 | GPX 파일 업로드 및 파싱 |
+| GET | `/api/running-records` | 불필요 | 전체 러닝 기록 조회 (모든 사용자) |
+| GET | `/api/running-records?period=today\|week` | 불필요 | 오늘/일주일 기록 조회 |
+| DELETE | `/api/running-records/{id}` | 필요 | 러닝 기록 삭제 (본인 기록만) |
+| POST | `/api/goals` | 필요 | 목표 설정 |
+| GET | `/api/goals/current` | 선택 | 현재 목표 및 달성률 조회 (토큰 있으면 유저 목표, 없으면 null) |
+| GET | `/api/stats/summary` | 불필요 | 전체 통계 요약 |

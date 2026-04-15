@@ -6,6 +6,7 @@ import com.running.dto.GoalResponse;
 import com.running.service.GoalService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -16,12 +17,14 @@ public class GoalController {
     private final GoalService goalService;
 
     @PostMapping
-    public ResponseEntity<ApiResponse<GoalResponse>> save(@RequestBody GoalRequest request) {
-        return ResponseEntity.ok(ApiResponse.ok(goalService.save(request)));
+    public ResponseEntity<ApiResponse<GoalResponse>> save(
+            @RequestBody GoalRequest request,
+            @AuthenticationPrincipal Long userId) {
+        return ResponseEntity.ok(ApiResponse.ok(goalService.save(userId, request)));
     }
 
     @GetMapping("/current")
-    public ResponseEntity<ApiResponse<GoalResponse>> getCurrent() {
-        return ResponseEntity.ok(ApiResponse.ok(goalService.getCurrent()));
+    public ResponseEntity<ApiResponse<GoalResponse>> getCurrent(@AuthenticationPrincipal Long userId) {
+        return ResponseEntity.ok(ApiResponse.ok(goalService.getCurrent(userId)));
     }
 }

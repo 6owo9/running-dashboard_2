@@ -7,6 +7,7 @@ import com.running.entity.RunningRecord;
 import com.running.repository.RunningRecordRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -25,7 +26,7 @@ public class RunningRecordService {
     private final GpxParserService gpxParserService;
     private final ObjectMapper objectMapper;
 
-    public RunningRecordResponse upload(MultipartFile file) {
+    public RunningRecordResponse upload(MultipartFile file, Long userId) {
         String filename = file.getOriginalFilename();
         String title;
         if (filename == null || filename.isBlank()) {
@@ -35,7 +36,7 @@ public class RunningRecordService {
             title = (dotIndex != -1) ? filename.substring(0, dotIndex) : filename;
         }
 
-        if (runningRecordRepository.existsByTitle(title)) {
+        if (runningRecordRepository.existsByTitleAndUserId(title, userId)) {
             throw new IllegalArgumentException("이미 존재하는 기록입니다: " + title);
         }
 
@@ -54,14 +55,17 @@ public class RunningRecordService {
                 .distanceKm(parsed.distanceKm())
                 .durationSeconds(parsed.durationSeconds())
                 .coordinates(coordinatesJson)
+                .userId(userId)
                 .build();
 
         return RunningRecordResponse.from(runningRecordRepository.save(record));
     }
 
-    public void delete(Long id) {
-        if (!runningRecordRepository.existsById(id)) {
-            throw new NoSuchElementException("기록을 찾을 수 없습니다: " + id);
+    public void delete(Long id, Long userId) {
+        RunningRecord record = runningRecordRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("기록을 찾을 수 없습니다: " + id));
+        if (!userId.equals(record.getUserId())) {
+            throw new AccessDeniedException("삭제 권한이 없습니다.");
         }
         runningRecordRepository.deleteById(id);
     }

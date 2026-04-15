@@ -49,6 +49,13 @@
 - `res.ok`가 false인 경우 응답 body의 `message` 필드를 에러 메시지로 사용한다. 파싱 실패 시 기본 메시지로 fallback한다.
 - 업로드 전 동일 title(파일명 확장자 제거 기준)의 기록이 이미 존재하면 `window.alert`를 표시하고 업로드를 중단한다.
 
+## 인증 관련
+- JWT 토큰은 `localStorage`에 `rd_token`, 유저 정보는 `rd_user` 키로 저장한다.
+- `useAuth` 훅(`src/hooks/useAuth.ts`)으로 토큰/유저 상태를 관리한다. MainPage에서만 사용하고 하위 컴포넌트에 props로 전달한다.
+- 인증이 필요한 API (upload, delete, saveGoal, updateProfile, changePassword)는 반드시 `Authorization: Bearer <token>` 헤더를 포함한다.
+- 비로그인 시 업로드 버튼 클릭 → AuthModal 열기. 목표 설정 버튼 클릭 → AuthModal 열기.
+- 비로그인 시 삭제 버튼은 표시하지 않는다.
+
 ---
 
 ## DTO 관련
@@ -63,10 +70,12 @@
 | 화면 | 파일 | 비고 |
 |------|------|------|
 | 메인 (단일 페이지) | `pages/MainPage.tsx` | 지도, 기록 목록, 통계, 캘린더 통합 |
-| 업로드 | `components/UploadModal.tsx` | Modal 방식, 캘린더·파일 업로드·기록 목록 포함 |
-| 목표 설정 | `components/GoalModal.tsx` | Modal 방식, 목표 설정·달성률 표시 |
+| 업로드 | `components/UploadModal.tsx` | Modal 방식, 캘린더·파일 업로드·기록 목록 포함. `token` prop 필수 |
+| 목표 설정 | `components/GoalModal.tsx` | Modal 방식, 목표 설정·달성률 표시. `token` prop 필수 |
+| 로그인/회원가입 | `components/AuthModal.tsx` | 탭 전환 방식. `initialTab` prop으로 초기 탭 지정 |
+| 프로필 수정 | `components/ProfileModal.tsx` | 프로필 수정·비밀번호 변경 탭. `AvatarCircle` 컴포넌트 export |
 | 통계 카드 | `components/StatCard.tsx` | 재사용 카드 컴포넌트 |
 | 진행률 바 | `components/ProgressBar.tsx` | 목표 달성률 시각화 |
-| 헤더 | `components/Header.tsx` | 앱 상단 네비게이션 |
+| 헤더 | `components/Header.tsx` | 로그인 시: 업로드·닉네임·로그아웃. 비로그인 시: 업로드(비활성)·로그인·회원가입 |
 
 - 라우팅 없음. 단일 경로(`/`)에서 Modal로 화면 전환.

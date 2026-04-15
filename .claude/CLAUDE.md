@@ -107,10 +107,11 @@
 | 스타일 | Tailwind CSS |
 | 패키지 매니저 | pnpm |
 | 지도 | Leaflet.js |
-| 백엔드 | Java 17, Spring Boot 3.x, Spring Data JPA |
+| 백엔드 | Java 21, Spring Boot 3.5.0, Spring Data JPA, Spring Security |
+| 인증 | JWT (jjwt 0.12.6), BCrypt |
 | DB | H2 In-Memory (`jdbc:h2:mem:runningdb`) |
 | 빌드 도구 | Gradle |
-| 배포 | Render.com |
+| 배포 | Ubuntu 24.04 LTS 로컬 서버 (nginx + systemd) |
 
 ---
 
@@ -124,23 +125,33 @@ running-dashboard/
 ├── frontend/                → Vite + TypeScript + Tailwind
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── Header.tsx       → 앱 헤더
+│   │   │   ├── Header.tsx       → 앱 헤더 (로그인 상태별 버튼 전환)
 │   │   │   ├── StatCard.tsx     → 통계 카드
 │   │   │   ├── ProgressBar.tsx  → 목표 달성률 바
 │   │   │   ├── UploadModal.tsx  → 업로드 Modal (캘린더 포함)
-│   │   │   └── GoalModal.tsx    → 목표 설정 Modal
+│   │   │   ├── GoalModal.tsx    → 목표 설정 Modal
+│   │   │   ├── AuthModal.tsx    → 로그인/회원가입 Modal (탭 전환)
+│   │   │   └── ProfileModal.tsx → 프로필 수정/비밀번호 변경 Modal
 │   │   ├── pages/
 │   │   │   └── MainPage.tsx     → 단일 메인 페이지 (지도·기록·통계 통합)
-│   │   └── api/             → 백엔드 API 호출
+│   │   ├── api/             → 백엔드 API 호출
+│   │   │   ├── runningApi.ts
+│   │   │   ├── goalApi.ts
+│   │   │   ├── statsApi.ts
+│   │   │   └── authApi.ts   → 인증/사용자 API
+│   │   └── hooks/
+│   │       └── useAuth.ts   → JWT 토큰 관리 (localStorage)
 │   └── package.json
-└── backend/                 → Spring Boot + H2
+└── backend/                 → Spring Boot + H2 + Spring Security
     └── src/main/
         ├── java/com/running/
+        │   ├── config/          → SecurityConfig, JwtUtil, JwtAuthFilter, WebConfig
         │   ├── controller/      → REST API
         │   ├── service/         → 비즈니스 로직
         │   ├── repository/      → DB 접근
-        │   ├── entity/          → JPA Entity
-        │   └── dto/             → 요청/응답 객체
+        │   ├── entity/          → JPA Entity (User, RunningRecord, Goal)
+        │   ├── dto/             → 요청/응답 객체
+        │   └── exception/       → GlobalExceptionHandler
         └── resources/
             └── application.yml
 ```
@@ -160,11 +171,72 @@ cd backend
 ./gradlew bootRun
 ```
 
+---
+
+## Ubuntu 로컬 서버 배포 (172.22.54.251)
+
+### 서버 구성
+| 구성요소 | 설정 |
+|---------|------|
+| 서버 IP | `172.22.54.251` |
+| 프론트엔드 | nginx → `http://172.22.54.251:80` |
+| 백엔드 | Spring Boot JAR → `localhost:8080` |
+| 프록시 | nginx `/api/` → `localhost:8080` |
+| dist 경로 | `/home/seong/running-dashboard_2/frontend/dist` |
+| nginx 설정 | `/etc/nginx/sites-available/running-dashboard` |
+| 백엔드 서비스 | `/etc/systemd/system/running-backend.service` |
+
+### 배포 시 적용된 사항
+
+| 항목 | 결과 |
+|------|------|
+| SSH 접속 | PowerShell → Ubuntu SSH 접속. 멀티라인 붙여넣기 깨짐 → nano 사용 권장 |
+| 패키지 | Java 21, pnpm, nginx 이미 설치되어 있었음 |
+| 프론트 빌드 | `pnpm build` → `frontend/dist` 생성 |
+| 백엔드 빌드 | `./gradlew bootJar` → `build/libs/running-dashboard-0.0.1-SNAPSHOT.jar` |
+| nginx 권한 | `www-data`가 `/home/seong/` 접근 불가 → `chmod o+x /home/seong`, `chmod -R o+r frontend/dist` 로 해결 |
+| 백엔드 자동 시작 | systemd 서비스 등록 (`running-backend.service`), 부팅 시 자동 실행 |
+
+### 재배포 절차 (코드 변경 시)
+
+```bash
+# 1. 코드 pull
+cd ~/running-dashboard_2
+git pull
+
+# 2. 프론트엔드 재빌드
+cd frontend && pnpm build
+
+# 3. 백엔드 재빌드 및 재시작
+cd ../backend
+./gradlew bootJar
+sudo systemctl restart running-backend
+```
+
+### 서버 관리 명령어
+
+```bash
+# 백엔드 상태 확인
+sudo systemctl status running-backend
+
+# 백엔드 로그 확인
+tail -f ~/app.log
+
+# nginx 재시작
+sudo systemctl reload nginx
+```
+
+### 주의사항
+- H2 In-Memory DB 사용 → 백엔드 재시작 시 데이터 초기화됨
+- systemd 서비스 파일의 `ExecStart`에 JAR 파일명 글로브(`*.jar`) 사용 불가 → 정확한 파일명 지정 필요
+
 ## 주요 화면
 라우팅 없음. 단일 경로(`/`)에서 Modal로 화면 전환한다.
 
 | 화면 | 진입 방법 | 설명 |
 |------|----------|------|
 | 메인 | `/` | 지도·기록 목록·통계·캘린더 통합 화면 |
-| 기록 업로드 | 헤더 업로드 버튼 | GPX 파일 업로드, 캘린더, 기록 목록 |
-| 목표 설정 | 목표 달성률 카드 수정 버튼 | 목표 거리 설정 및 달성률 확인 |
+| 기록 업로드 | 헤더 업로드 버튼 (로그인 필요) | GPX 파일 업로드, 캘린더, 기록 목록 |
+| 목표 설정 | 목표 달성률 카드 수정 버튼 (로그인 필요) | 목표 거리 설정 및 달성률 확인 |
+| 로그인/회원가입 | 헤더 로그인·회원가입 버튼 | JWT 인증, localStorage 저장 |
+| 프로필 수정 | 헤더 닉네임 버튼 (로그인 시) | 닉네임·프로필 이미지 수정, 비밀번호 변경 |
