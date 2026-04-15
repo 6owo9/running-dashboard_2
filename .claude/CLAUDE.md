@@ -109,7 +109,7 @@
 | 지도 | Leaflet.js |
 | 백엔드 | Java 21, Spring Boot 3.5.0, Spring Data JPA, Spring Security |
 | 인증 | JWT (jjwt 0.12.6), BCrypt |
-| DB | H2 In-Memory (`jdbc:h2:mem:runningdb`) |
+| DB | H2 File (`jdbc:h2:file:/home/seong/data/runningdb`) |
 | 빌드 도구 | Gradle |
 | 배포 | Ubuntu 24.04 LTS 로컬 서버 (nginx + systemd) |
 
@@ -227,7 +227,7 @@ sudo systemctl reload nginx
 ```
 
 ### 주의사항
-- H2 In-Memory DB 사용 → 백엔드 재시작 시 데이터 초기화됨
+- H2 File DB 사용 → 데이터 파일 위치: `/home/seong/data/runningdb.mv.db`
 - systemd 서비스 파일의 `ExecStart`에 JAR 파일명 글로브(`*.jar`) 사용 불가 → 정확한 파일명 지정 필요
 
 ## 주요 화면

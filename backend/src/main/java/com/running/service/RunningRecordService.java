@@ -71,19 +71,32 @@ public class RunningRecordService {
     }
 
     @Transactional(readOnly = true)
-    public List<RunningRecordResponse> getRecords(String period) {
+    public List<RunningRecordResponse> getRecords(String period, Long userId) {
         List<RunningRecord> records;
+        LocalDate today = LocalDate.now();
 
-        if (period == null) {
-            records = runningRecordRepository.findAllByOrderByDateDesc();
-        } else if ("today".equals(period)) {
-            records = runningRecordRepository.findByDateOrderByCreatedAtDesc(LocalDate.now());
-        } else if ("week".equals(period)) {
-            records = runningRecordRepository.findByDateBetweenOrderByDateDesc(
-                    LocalDate.now().minusDays(6), LocalDate.now()
-            );
+        if (userId != null) {
+            // 로그인: 내 기록만
+            if (period == null) {
+                records = runningRecordRepository.findByUserIdOrderByDateDesc(userId);
+            } else if ("today".equals(period)) {
+                records = runningRecordRepository.findByUserIdAndDateOrderByCreatedAtDesc(userId, today);
+            } else if ("week".equals(period)) {
+                records = runningRecordRepository.findByUserIdAndDateBetweenOrderByDateDesc(userId, today.minusDays(6), today);
+            } else {
+                throw new IllegalArgumentException("유효하지 않은 period 값입니다. (today, week)");
+            }
         } else {
-            throw new IllegalArgumentException("유효하지 않은 period 값입니다. (today, week)");
+            // 게스트: 전체 기록
+            if (period == null) {
+                records = runningRecordRepository.findAllByOrderByDateDesc();
+            } else if ("today".equals(period)) {
+                records = runningRecordRepository.findByDateOrderByCreatedAtDesc(today);
+            } else if ("week".equals(period)) {
+                records = runningRecordRepository.findByDateBetweenOrderByDateDesc(today.minusDays(6), today);
+            } else {
+                throw new IllegalArgumentException("유효하지 않은 period 값입니다. (today, week)");
+            }
         }
 
         return records.stream().map(RunningRecordResponse::from).toList();

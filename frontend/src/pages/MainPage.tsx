@@ -178,7 +178,7 @@ export default function MainPage() {
 
   const refresh = useCallback(async () => {
     try {
-      const [sum, recs, g] = await Promise.all([getSummary(), getRecords(), getGoal(token)])
+      const [sum, recs, g] = await Promise.all([getSummary(), getRecords(undefined, token), getGoal(token)])
       setSummary(sum)
       setAllRecords(recs)
       setGoal(g)
@@ -191,11 +191,11 @@ export default function MainPage() {
   useEffect(() => {
     setMapLoading(true)
     setError(null)
-    getRecords(period)
+    getRecords(period, token)
       .then(setPeriodRecords)
       .catch(e => setError(e.message))
       .finally(() => setMapLoading(false))
-  }, [period])
+  }, [period, token])
 
   // 경로 렌더링
   useEffect(() => {

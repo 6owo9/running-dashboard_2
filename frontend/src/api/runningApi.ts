@@ -15,9 +15,10 @@ async function handleResponse<T>(res: Response): Promise<T> {
   return body.data
 }
 
-export async function getRecords(period?: 'today' | 'week'): Promise<RunningRecord[]> {
+export async function getRecords(period?: 'today' | 'week', token?: string | null): Promise<RunningRecord[]> {
   const url = period ? `/api/running-records?period=${period}` : '/api/running-records'
-  return handleResponse<RunningRecord[]>(await fetch(url))
+  const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {}
+  return handleResponse<RunningRecord[]>(await fetch(url, { headers }))
 }
 
 export async function uploadFile(file: File, token: string): Promise<RunningRecord> {
