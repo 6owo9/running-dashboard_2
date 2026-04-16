@@ -173,62 +173,111 @@ cd backend
 
 ---
 
-## Ubuntu 로컬 서버 배포 (172.22.54.251)
+## Ubuntu 로컬 서버 배포
 
-### 서버 구성
+### 서버 정보
+| 항목 | 값 |
+|------|-----|
+| OS | Ubuntu 24.04 LTS (WSL2) |
+| 네트워크 | WSL2 Mirrored 모드 (`~/.wslconfig`에 `networkingMode=mirrored` 설정) |
+| 네트워크 IP | `10.10.1.129` (Windows WiFi IP와 공유, 재시작 시 바뀔 수 있음) |
+| SSH 포트 | 22 |
+| HTTP 포트 | 80 |
+| 접속 URL (같은 WiFi 기기) | `http://10.10.1.129` |
+| 접속 URL (서버 본체 노트북) | `http://localhost` |
+| SSH 계정 | `seong` |
+
+### 구성 요소
 | 구성요소 | 설정 |
 |---------|------|
-| 서버 IP | `172.22.54.251` |
-| 프론트엔드 | nginx → `http://172.22.54.251:80` |
-| 백엔드 | Spring Boot JAR → `localhost:8080` |
+| 프론트엔드 | nginx → `http://10.10.1.129:80` |
+| 백엔드 | Spring Boot JAR → `localhost:8080` (내부 전용) |
 | 프록시 | nginx `/api/` → `localhost:8080` |
 | dist 경로 | `/home/seong/running-dashboard_2/frontend/dist` |
 | nginx 설정 | `/etc/nginx/sites-available/running-dashboard` |
 | 백엔드 서비스 | `/etc/systemd/system/running-backend.service` |
+| DB 파일 | `/home/seong/data/runningdb.mv.db` |
 
-### 배포 시 적용된 사항
+### 접속 방법
+| 환경 | URL |
+|------|-----|
+| 서버 노트북 (본체) | `http://localhost` |
+| 같은 WiFi 기기 (모바일 등) | `http://10.10.1.129` |
+| SSH | `ssh seong@10.10.1.129` |
 
-| 항목 | 결과 |
-|------|------|
-| SSH 접속 | PowerShell → Ubuntu SSH 접속. 멀티라인 붙여넣기 깨짐 → nano 사용 권장 |
-| 패키지 | Java 21, pnpm, nginx 이미 설치되어 있었음 |
-| 프론트 빌드 | `pnpm build` → `frontend/dist` 생성 |
-| 백엔드 빌드 | `./gradlew bootJar` → `build/libs/running-dashboard-0.0.1-SNAPSHOT.jar` |
-| nginx 권한 | `www-data`가 `/home/seong/` 접근 불가 → `chmod o+x /home/seong`, `chmod -R o+r frontend/dist` 로 해결 |
-| 백엔드 자동 시작 | systemd 서비스 등록 (`running-backend.service`), 부팅 시 자동 실행 |
+> IP(`10.10.1.129`)는 재시작 시 바뀔 수 있음. 바뀌면 `ip addr show eth0 | grep "inet "` 으로 확인.
+
+### 방화벽
+| 포트 | 위치 | 용도 | 상태 |
+|------|------|------|------|
+| 22/tcp | ufw | SSH | ALLOW |
+| 80/tcp | ufw | HTTP | ALLOW |
+| 8080/tcp | ufw | 백엔드 내부 통신 | ALLOW (nginx → Spring Boot) |
+| 80/tcp | Windows Defender | HTTP (외부 → WSL2) | ALLOW |
+| 8080/tcp | Windows Defender | 백엔드 내부 통신 | ALLOW |
 
 ### 재배포 절차 (코드 변경 시)
 
 ```bash
-# 1. 코드 pull
 cd ~/running-dashboard_2
 git pull
 
-# 2. 프론트엔드 재빌드
 cd frontend && pnpm build
-
-# 3. 백엔드 재빌드 및 재시작
-cd ../backend
-./gradlew bootJar
+cd ../backend && ./gradlew bootJar
 sudo systemctl restart running-backend
 ```
 
 ### 서버 관리 명령어
 
 ```bash
-# 백엔드 상태 확인
+# 백엔드 상태/로그
 sudo systemctl status running-backend
-
-# 백엔드 로그 확인
 tail -f ~/app.log
 
 # nginx 재시작
 sudo systemctl reload nginx
+
+# 방화벽 상태
+sudo ufw status
 ```
 
+### WSL2 외부 접속 설정
+WSL2는 기본적으로 가상 네트워크(`172.x.x.x`)에 격리되어 같은 WiFi 기기에서 접속 불가.
+Mirrored 모드로 Windows와 네트워크를 공유하면 해결됨.
+
+**설정 파일:** `C:\Users\seong\.wslconfig`
+```
+[wsl2]
+networkingMode=mirrored
+```
+
+**Windows 방화벽 규칙 추가** (PowerShell 관리자 권한):
+```powershell
+New-NetFirewallRule -DisplayName "WSL2 Port 80" -Direction Inbound -LocalPort 80 -Protocol TCP -Action Allow
+```
+
+**WSL2 재시작** (PowerShell):
+```powershell
+wsl --shutdown
+wsl
+```
+
+**주의:** IP(`10.10.1.129`)는 재시작 시 바뀔 수 있음. nginx `server_name`은 `_`(catch-all)로 설정되어 있어 IP 변경 영향 없음.
+
+### 트러블슈팅 기록
+| 문제 | 원인 | 해결 |
+|------|------|------|
+| PowerShell heredoc 깨짐 | 멀티라인 붙여넣기 시 줄바꿈 분리 | `sudo nano`로 직접 편집 |
+| nginx 500 에러 | `www-data`가 `/home/seong/` 접근 불가 | `chmod o+x /home/seong`, `chmod -R o+r frontend/dist` |
+| 같은 WiFi 기기 접속 불가 | WSL2 가상 네트워크 격리 | `.wslconfig` Mirrored 모드 + Windows 방화벽 규칙 추가 |
+| 서버 본체(노트북)에서 접속 | 자기 자신이 서버라 IP로 접속 불가 | `http://localhost` 사용 |
+| systemd JAR 실행 실패 | `ExecStart`에 `*.jar` 글로브 불가 | 파일명 직접 지정: `running-dashboard-0.0.1-SNAPSHOT.jar` |
+| ufw 미설치 | 기본 설치 안 됨 | `sudo apt install -y ufw` |
+
 ### 주의사항
-- H2 File DB 사용 → 데이터 파일 위치: `/home/seong/data/runningdb.mv.db`
-- systemd 서비스 파일의 `ExecStart`에 JAR 파일명 글로브(`*.jar`) 사용 불가 → 정확한 파일명 지정 필요
+- 같은 네트워크에서만 접속 가능 (내부 IP). 외부 접속은 공유기 포트포워딩 필요
+- H2 File DB → 재시작해도 데이터 유지됨
+- 프론트 빌드 후 nginx 권한 재확인 필요: `chmod -R o+r frontend/dist`
 
 ## 주요 화면
 라우팅 없음. 단일 경로(`/`)에서 Modal로 화면 전환한다.
