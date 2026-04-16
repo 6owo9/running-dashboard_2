@@ -54,7 +54,7 @@ export default function Header({
               }`}
             >
               <Upload size={15} />
-              업로드
+              <span className="hidden sm:inline">업로드</span>
             </button>
 
             {isLoggedIn && user ? (

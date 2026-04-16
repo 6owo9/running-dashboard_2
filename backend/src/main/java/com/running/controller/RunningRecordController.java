@@ -27,9 +27,8 @@ public class RunningRecordController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<RunningRecordResponse>>> getRecords(
-            @RequestParam(required = false) String period,
             @AuthenticationPrincipal Long userId) {
-        return ResponseEntity.ok(ApiResponse.ok(runningRecordService.getRecords(period, userId)));
+        return ResponseEntity.ok(ApiResponse.ok(runningRecordService.getRecords(userId)));
     }
 
     @DeleteMapping("/{id}")

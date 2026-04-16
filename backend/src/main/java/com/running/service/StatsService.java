@@ -16,8 +16,10 @@ public class StatsService {
 
     private final RunningRecordRepository runningRecordRepository;
 
-    public StatsSummaryResponse getSummary() {
-        List<RunningRecord> records = runningRecordRepository.findAll();
+    public StatsSummaryResponse getSummary(Long userId) {
+        List<RunningRecord> records = (userId != null)
+                ? runningRecordRepository.findByUserIdOrderByDateDesc(userId)
+                : runningRecordRepository.findAll();
 
         double totalDistance = records.stream()
                 .mapToDouble(r -> r.getDistanceKm() != null ? r.getDistanceKm() : 0.0)

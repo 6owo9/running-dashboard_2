@@ -17,8 +17,6 @@ import { getSummary } from '../api/statsApi'
 import type { StatsSummary } from '../api/statsApi'
 import { useAuth } from '../hooks/useAuth'
 
-type Period = 'today' | 'week'
-
 function fmtDuration(s: number) {
   const h = Math.floor(s / 3600)
   const m = Math.floor((s % 3600) / 60)
@@ -137,14 +135,10 @@ export default function MainPage() {
   const [authOpen, setAuthOpen] = useState(false)
   const [authInitTab, setAuthInitTab] = useState<'login' | 'signup'>('login')
   const [profileOpen, setProfileOpen] = useState(false)
-  const [period, setPeriod] = useState<Period>('week')
 
   const [summary, setSummary] = useState<StatsSummary | null>(null)
   const [allRecords, setAllRecords] = useState<RunningRecord[]>([])
-  const [periodRecords, setPeriodRecords] = useState<RunningRecord[]>([])
   const [goal, setGoal] = useState<Goal | null>(null)
-  const [mapLoading, setMapLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [focusedId, setFocusedId] = useState<number | null>(null)
 
   const containerRef = useRef<HTMLDivElement>(null)
@@ -178,7 +172,7 @@ export default function MainPage() {
 
   const refresh = useCallback(async () => {
     try {
-      const [sum, recs, g] = await Promise.all([getSummary(), getRecords(undefined, token), getGoal(token)])
+      const [sum, recs, g] = await Promise.all([getSummary(token), getRecords(token), getGoal(token)])
       setSummary(sum)
       setAllRecords(recs)
       setGoal(g)
@@ -187,23 +181,13 @@ export default function MainPage() {
 
   useEffect(() => { refresh() }, [refresh])
 
-  // 기간별 기록
-  useEffect(() => {
-    setMapLoading(true)
-    setError(null)
-    getRecords(period, token)
-      .then(setPeriodRecords)
-      .catch(e => setError(e.message))
-      .finally(() => setMapLoading(false))
-  }, [period, token])
-
   // 경로 렌더링
   useEffect(() => {
     if (!routeLayersRef.current) return
     routeLayersRef.current.clearLayers()
     const allBounds: [number, number][] = []
 
-    periodRecords.forEach(r => {
+    allRecords.forEach(r => {
       if (!r.coordinates?.length) return
       L.polyline(r.coordinates, {
         color: '#155dfc',
@@ -225,7 +209,7 @@ export default function MainPage() {
     if (allBounds.length && mapRef.current) {
       mapRef.current.fitBounds(L.latLngBounds(allBounds), { padding: [50, 50] })
     }
-  }, [periodRecords])
+  }, [allRecords])
 
   const zoomToRecord = (r: RunningRecord) => {
     if (!r.coordinates?.length || !mapRef.current || !focusLayerRef.current) return
@@ -318,48 +302,20 @@ export default function MainPage() {
 
           {/* 지도 */}
           <section className="lg:col-span-2 bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+            <div className="flex items-center px-5 py-4 border-b border-border">
               <h2 className="font-semibold text-foreground flex items-center gap-2">
                 <span className="text-primary"><RouteIcon /></span>
                 러닝 경로
               </h2>
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-muted-foreground">클릭하여 경로 확인</span>
-                <div className="flex gap-1">
-                  {(['today', 'week'] as Period[]).map(p => (
-                    <button
-                      key={p}
-                      onClick={() => setPeriod(p)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                        period === p
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted text-muted-foreground hover:bg-accent'
-                      }`}
-                    >
-                      {p === 'today' ? '오늘' : '일주일'}
-                    </button>
-                  ))}
-                </div>
-              </div>
             </div>
 
             <div className="relative h-[300px] sm:h-[600px] bg-muted">
               <div ref={containerRef} className="absolute inset-0 isolate" />
 
-              {mapLoading && (
-                <div className="absolute inset-0 bg-background/70 flex items-center justify-center z-[50] pointer-events-none">
-                  <span className="text-sm text-muted-foreground">불러오는 중...</span>
-                </div>
-              )}
-              {error && (
-                <div className="absolute inset-0 bg-background/80 flex items-center justify-center z-[50] pointer-events-none">
-                  <span className="text-sm text-destructive">{error}</span>
-                </div>
-              )}
-              {!mapLoading && !error && periodRecords.length === 0 && (
+              {allRecords.length === 0 && (
                 <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[50] pointer-events-none">
                   <span className="text-sm text-muted-foreground bg-card px-4 py-2 rounded-full shadow-sm border border-border whitespace-nowrap">
-                    이 기간의 러닝 기록이 없습니다.
+                    러닝 기록이 없습니다.
                   </span>
                 </div>
               )}
