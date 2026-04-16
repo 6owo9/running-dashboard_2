@@ -220,12 +220,11 @@ cd backend
 
 ```bash
 cd ~/running-dashboard_2
-git pull
-
-cd frontend && pnpm build
-cd ../backend && ./gradlew bootJar
-sudo systemctl restart running-backend
+bash deploy.sh
 ```
+
+> **주의:** WSL2 Mirrored 모드에서 Gradle 데몬 소켓이 차단되어 `./gradlew bootJar`가 동작하지 않음.  
+> `deploy.sh`는 `cmd.exe`를 통해 Windows 쪽 Gradle로 빌드 후 JAR을 복사하는 방식으로 우회.
 
 ### 서버 관리 명령어
 
@@ -273,6 +272,7 @@ wsl
 | 서버 본체(노트북)에서 접속 | 자기 자신이 서버라 IP로 접속 불가 | `http://localhost` 사용 |
 | systemd JAR 실행 실패 | `ExecStart`에 `*.jar` 글로브 불가 | 파일명 직접 지정: `running-dashboard-0.0.1-SNAPSHOT.jar` |
 | ufw 미설치 | 기본 설치 안 됨 | `sudo apt install -y ufw` |
+| WSL2에서 `./gradlew bootJar` 실패 | WSL2 Mirrored 모드가 Gradle 데몬 TCP 소켓 차단 | `deploy.sh`로 Windows Gradle 빌드 후 JAR 복사 |
 
 ### 주의사항
 - 같은 네트워크에서만 접속 가능 (내부 IP). 외부 접속은 공유기 포트포워딩 필요
@@ -289,3 +289,5 @@ wsl
 | 목표 설정 | 목표 달성률 카드 수정 버튼 (로그인 필요) | 목표 거리 설정 및 달성률 확인 |
 | 로그인/회원가입 | 헤더 로그인·회원가입 버튼 | JWT 인증, localStorage 저장 |
 | 프로필 수정 | 헤더 닉네임 버튼 (로그인 시) | 닉네임·프로필 이미지 수정, 비밀번호 변경 |
+
+
