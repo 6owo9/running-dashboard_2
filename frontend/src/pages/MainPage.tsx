@@ -343,7 +343,7 @@ export default function MainPage() {
               </div>
             </div>
 
-            <div className="relative h-[600px] bg-muted">
+            <div className="relative h-[300px] sm:h-[600px] bg-muted">
               <div ref={containerRef} className="absolute inset-0 isolate" />
 
               {mapLoading && (
