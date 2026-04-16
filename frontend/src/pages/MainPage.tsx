@@ -333,7 +333,7 @@ export default function MainPage() {
 
             <Calendar records={allRecords} onClickDate={(r) => { zoomToRecord(r); setFocusedId(r.id) }} />
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-2 max-h-[640px]">
+            <div className="overflow-y-auto p-4 space-y-2 max-h-[288px]">
               {allRecords.length === 0 ? (
                 <p className="text-sm text-muted-foreground">기록이 없습니다.</p>
               ) : (
