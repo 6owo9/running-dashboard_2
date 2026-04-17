@@ -27,3 +27,22 @@ sudo systemctl restart running-backend
 sudo systemctl status running-backend --no-pager -l
 
 echo "=== 배포 완료 ==="
+
+echo "=== QA 체크 ==="
+sleep 3  # 서비스 기동 대기
+
+check() {
+  local label=$1
+  local url=$2
+  local code
+  code=$(curl -s -o /dev/null -w '%{http_code}' "$url")
+  if [ "$code" = "200" ]; then
+    echo "[PASS] $label → $code"
+  else
+    echo "[FAIL] $label → $code"
+  fi
+}
+
+check "nginx 프론트엔드"        "http://localhost/"
+check "Spring Boot API"        "http://localhost:8080/api/running-records"
+check "nginx 프록시 API"        "http://localhost/api/running-records"
