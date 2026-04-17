@@ -127,6 +127,8 @@ function CalendarIcon() {
   )
 }
 
+const ROUTE_COLORS = ['#155dfc', '#0ea5e9', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#14b8a6']
+
 export default function MainPage() {
   const { token, user, isLoggedIn, login, logout, updateUser } = useAuth()
 
@@ -144,7 +146,6 @@ export default function MainPage() {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
   const routeLayersRef = useRef<L.LayerGroup | null>(null)
-  const focusLayerRef = useRef<L.LayerGroup | null>(null)
 
   // 지도 초기화
   useEffect(() => {
@@ -160,13 +161,11 @@ export default function MainPage() {
     }).addTo(map)
     L.control.zoom({ position: 'bottomright' }).addTo(map)
     routeLayersRef.current = L.layerGroup().addTo(map)
-    focusLayerRef.current = L.layerGroup().addTo(map)
     mapRef.current = map
     return () => {
       map.remove()
       mapRef.current = null
       routeLayersRef.current = null
-      focusLayerRef.current = null
     }
   }, [])
 
@@ -181,48 +180,28 @@ export default function MainPage() {
 
   useEffect(() => { refresh() }, [refresh])
 
-  // 경로 렌더링
+  // 경로 렌더링 (focusedId 변경 시에도 재렌더)
   useEffect(() => {
     if (!routeLayersRef.current) return
     routeLayersRef.current.clearLayers()
-    const allBounds: [number, number][] = []
 
-    allRecords.forEach(r => {
+    const toRender = focusedId !== null ? allRecords.filter(r => r.id === focusedId) : allRecords
+    const bounds: [number, number][] = []
+
+    toRender.forEach((r, idx) => {
       if (!r.coordinates?.length) return
-      L.polyline(r.coordinates, {
-        color: '#155dfc',
-        weight: 5,
-        opacity: 1,
-        lineCap: 'round',
-        lineJoin: 'round',
-      }).addTo(routeLayersRef.current!)
-      L.circleMarker(r.coordinates[0], {
-        radius: 7,
-        fillColor: '#155dfc',
-        color: '#1040c7',
-        weight: 2,
-        fillOpacity: 1,
-      }).addTo(routeLayersRef.current!)
-      allBounds.push(...r.coordinates)
+      const color = focusedId !== null ? '#155dfc' : ROUTE_COLORS[idx % ROUTE_COLORS.length]
+      L.polyline(r.coordinates, { color, weight: 5, opacity: 1, lineCap: 'round', lineJoin: 'round' })
+        .addTo(routeLayersRef.current!)
+      L.circleMarker(r.coordinates[0], { radius: 7, fillColor: color, color: '#fff', weight: 2, fillOpacity: 1 })
+        .addTo(routeLayersRef.current!)
+      bounds.push(...r.coordinates)
     })
 
-    if (allBounds.length && mapRef.current) {
-      mapRef.current.fitBounds(L.latLngBounds(allBounds), { padding: [50, 50] })
+    if (bounds.length && mapRef.current) {
+      mapRef.current.fitBounds(L.latLngBounds(bounds), { padding: [50, 50] })
     }
-  }, [allRecords])
-
-  const zoomToRecord = (r: RunningRecord) => {
-    if (!r.coordinates?.length || !mapRef.current || !focusLayerRef.current) return
-    focusLayerRef.current.clearLayers()
-    L.polyline(r.coordinates, {
-      color: '#155dfc',
-      weight: 5,
-      opacity: 1,
-      lineCap: 'round',
-      lineJoin: 'round',
-    }).addTo(focusLayerRef.current)
-    mapRef.current.fitBounds(L.latLngBounds(r.coordinates), { padding: [50, 50] })
-  }
+  }, [allRecords, focusedId])
 
   return (
     <div className="min-h-screen bg-background">
@@ -302,11 +281,21 @@ export default function MainPage() {
 
           {/* 지도 */}
           <section className="lg:col-span-2 bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-            <div className="flex items-center px-5 py-4 border-b border-border">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <h2 className="font-semibold text-foreground flex items-center gap-2">
                 <span className="text-primary"><RouteIcon /></span>
                 러닝 경로
               </h2>
+              <button
+                onClick={() => setFocusedId(null)}
+                className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+                  focusedId === null
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'border-border text-muted-foreground hover:border-primary/50 hover:text-foreground'
+                }`}
+              >
+                전체
+              </button>
             </div>
 
             <div className="relative h-[300px] sm:h-[600px] bg-muted">
@@ -331,7 +320,7 @@ export default function MainPage() {
               </h2>
             </div>
 
-            <Calendar records={allRecords} onClickDate={(r) => { zoomToRecord(r); setFocusedId(r.id) }} />
+            <Calendar records={allRecords} onClickDate={(r) => setFocusedId(r.id)} />
 
             <div className="overflow-y-auto p-4 space-y-2 max-h-[288px]">
               {allRecords.length === 0 ? (
@@ -340,7 +329,7 @@ export default function MainPage() {
                 allRecords.map(r => (
                   <div
                     key={r.id}
-                    onClick={() => { zoomToRecord(r); setFocusedId(r.id) }}
+                    onClick={() => setFocusedId(r.id)}
                     className={`p-3 rounded-lg border cursor-pointer transition-all hover:shadow-sm ${
                       focusedId === r.id
                         ? 'border-primary bg-accent shadow-sm'
