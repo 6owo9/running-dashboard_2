@@ -12,7 +12,7 @@ pnpm dev
 ### Backend
 ```bash
 cd backend
-./gradlew bootRun
+gradlew bootRun
 ```
 
 ---
