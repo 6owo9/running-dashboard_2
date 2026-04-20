@@ -13,10 +13,11 @@ pnpm build
 chmod -R o+r dist
 cd ..
 
-echo "=== 백엔드 빌드 ==="
-cd backend
-./gradlew bootJar --no-daemon
-cd ..
+echo "=== 백엔드 빌드 (Windows Gradle 우회) ==="
+cmd.exe /c "cd /d C:\\Users\\seong\\Desktop\\star\\running-dashboard_2\\backend && gradlew.bat bootJar --no-daemon"
+mkdir -p "$REPO_DIR/backend/build/libs"
+cp "/mnt/c/Users/seong/Desktop/star/running-dashboard_2/backend/build/libs/running-dashboard-0.0.1-SNAPSHOT.jar" \
+   "$REPO_DIR/backend/build/libs/running-dashboard-0.0.1-SNAPSHOT.jar"
 
 echo "=== 서비스 재시작 ==="
 sudo systemctl restart running-backend
