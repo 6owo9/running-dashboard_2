@@ -17,7 +17,6 @@ export default function Header({
   isLoggedIn,
   user,
   onLoginClick,
-  onSignupClick,
   onProfileClick,
   onLogout,
 }: HeaderProps) {
