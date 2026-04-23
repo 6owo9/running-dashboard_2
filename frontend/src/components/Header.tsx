@@ -1,15 +1,15 @@
-import { Upload, LogOut, Activity } from 'lucide-react'
-import { AvatarCircle } from './ProfileModal'
-import type { AuthUser } from '../api/authApi'
+import { Activity, LogOut, Upload } from 'lucide-react';
+import type { AuthUser } from '../api/authApi';
+import { AvatarCircle } from './ProfileModal';
 
 interface HeaderProps {
-  onUpload: () => void
-  isLoggedIn: boolean
-  user: AuthUser | null
-  onLoginClick: () => void
-  onSignupClick: () => void
-  onProfileClick: () => void
-  onLogout: () => void
+  onUpload: () => void;
+  isLoggedIn: boolean;
+  user: AuthUser | null;
+  onLoginClick: () => void;
+  onSignupClick: () => void;
+  onProfileClick: () => void;
+  onLogout: () => void;
 }
 
 export default function Header({
@@ -21,9 +21,12 @@ export default function Header({
   onProfileClick,
   onLogout,
 }: HeaderProps) {
-  const now = new Date()
-  const dateStr = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일`
-  const dayName = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'][now.getDay()]
+  const now = new Date();
+  const dateStrYear = `${now.getFullYear()}년 `;
+  const dateStr = `${now.getMonth() + 1}월 ${now.getDate()}일`;
+  const dayName = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'][
+    now.getDay()
+  ];
 
   return (
     <header className="sticky top-0 z-40 border-b bg-card">
@@ -33,14 +36,17 @@ export default function Header({
             <Activity size={20} />
           </div>
           <div>
-            <span className="text-xl font-bold text-foreground">러닝 대시보드</span>
-            <p className="text-xs text-muted-foreground">이번 달 목표를 향해 달려보세요</p>
+            <span className="text-xl font-bold text-foreground hidden sm:block ">
+              러닝 대시보드
+            </span>
           </div>
         </div>
 
         <div className="flex items-center gap-4">
           <div className="text-right hidden sm:block">
-            <p className="text-sm font-medium text-foreground">{dateStr}</p>
+            <p className="text-sm font-medium text-foreground">
+              <span className="hidden md:inline-block">{dateStrYear}</span> {dateStr}
+            </p>
             <p className="text-xs text-muted-foreground">{dayName}</p>
           </div>
 
@@ -64,7 +70,9 @@ export default function Header({
                   className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent transition-colors"
                 >
                   <AvatarCircle id={user.profileImageId} size="sm" />
-                  <span className="text-sm font-medium text-foreground hidden sm:block">{user.nickname}</span>
+                  <span className="text-sm font-medium text-foreground hidden sm:block">
+                    {user.nickname}
+                  </span>
                 </button>
                 <button
                   onClick={onLogout}
@@ -82,17 +90,11 @@ export default function Header({
                 >
                   로그인
                 </button>
-                <button
-                  onClick={onSignupClick}
-                  className="px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
-                >
-                  회원가입
-                </button>
               </>
             )}
           </div>
         </div>
       </div>
     </header>
-  )
+  );
 }

@@ -1,7 +1,7 @@
+import { User, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { X, User } from 'lucide-react'
-import { updateProfile, changePassword } from '../api/authApi'
 import type { AuthUser } from '../api/authApi'
+import { changePassword, updateProfile } from '../api/authApi'
 
 interface Props {
   isOpen: boolean
@@ -114,7 +114,7 @@ export default function ProfileModal({ isOpen, onClose, token, user, onUpdated }
         {/* 헤더 */}
         <div className="flex items-center justify-between p-5 border-b border-border">
           <div className="flex items-center gap-3">
-            <AvatarCircle id={user.profileImageId} size="sm" />
+              <AvatarCircle id={user.profileImageId} size="md" />
             <div>
               <p className="text-sm font-semibold text-foreground">{user.nickname}</p>
               <p className="text-xs text-muted-foreground">@{user.username}</p>
