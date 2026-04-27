@@ -1,5 +1,6 @@
 package com.running.service;
 
+import com.running.config.FieldEncryptor;
 import com.running.dto.PasswordChangeRequest;
 import com.running.dto.ProfileUpdateRequest;
 import com.running.dto.UserResponse;
@@ -19,10 +20,12 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final FieldEncryptor fieldEncryptor;
 
     @Transactional(readOnly = true)
     public UserResponse getMe(Long userId) {
-        return UserResponse.from(findUser(userId));
+        User user = findUser(userId);
+        return UserResponse.from(user, fieldEncryptor.decrypt(user.getUsernameEncrypted()));
     }
 
     public UserResponse updateProfile(Long userId, ProfileUpdateRequest request) {
@@ -35,7 +38,7 @@ public class UserService {
 
         User user = findUser(userId);
         user.updateProfile(request.getNickname(), request.getProfileImageId());
-        return UserResponse.from(user);
+        return UserResponse.from(user, fieldEncryptor.decrypt(user.getUsernameEncrypted()));
     }
 
     public void changePassword(Long userId, PasswordChangeRequest request) {

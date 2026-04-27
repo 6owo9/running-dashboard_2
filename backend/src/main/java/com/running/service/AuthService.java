@@ -1,5 +1,6 @@
 package com.running.service;
 
+import com.running.config.FieldEncryptor;
 import com.running.config.JwtUtil;
 import com.running.dto.LoginRequest;
 import com.running.dto.LoginResponse;
@@ -20,20 +21,26 @@ public class AuthService {
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final FieldEncryptor fieldEncryptor;
 
     public LoginResponse signup(SignupRequest request) {
         validate(request);
 
-        if (userRepository.existsByUsername(request.getUsername())) {
+        String usernameHash = fieldEncryptor.hash(request.getUsername());
+        String emailHash = fieldEncryptor.hash(request.getEmail());
+
+        if (userRepository.existsByUsernameHash(usernameHash)) {
             throw new IllegalArgumentException("이미 사용 중인 아이디입니다.");
         }
-        if (userRepository.existsByEmail(request.getEmail())) {
+        if (userRepository.existsByEmailHash(emailHash)) {
             throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
         }
 
         User user = User.builder()
-                .username(request.getUsername())
-                .email(request.getEmail())
+                .usernameHash(usernameHash)
+                .usernameEncrypted(fieldEncryptor.encrypt(request.getUsername()))
+                .emailHash(emailHash)
+                .emailEncrypted(fieldEncryptor.encrypt(request.getEmail()))
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .nickname(request.getNickname())
                 .profileImageId(1)
@@ -41,23 +48,26 @@ public class AuthService {
 
         User saved = userRepository.save(user);
         return LoginResponse.builder()
-                .token(jwtUtil.generate(saved.getId(), saved.getUsername()))
-                .user(UserResponse.from(saved))
+                .token(jwtUtil.generate(saved.getId(), request.getUsername()))
+                .user(UserResponse.from(saved, request.getUsername()))
                 .build();
     }
 
     @Transactional(readOnly = true)
     public LoginResponse login(LoginRequest request) {
-        User user = userRepository.findByUsername(request.getUsername())
+        String usernameHash = fieldEncryptor.hash(request.getUsername());
+
+        User user = userRepository.findByUsernameHash(usernameHash)
                 .orElseThrow(() -> new IllegalArgumentException("아이디 또는 비밀번호가 올바르지 않습니다."));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             throw new IllegalArgumentException("아이디 또는 비밀번호가 올바르지 않습니다.");
         }
 
+        String decryptedUsername = fieldEncryptor.decrypt(user.getUsernameEncrypted());
         return LoginResponse.builder()
-                .token(jwtUtil.generate(user.getId(), user.getUsername()))
-                .user(UserResponse.from(user))
+                .token(jwtUtil.generate(user.getId(), decryptedUsername))
+                .user(UserResponse.from(user, decryptedUsername))
                 .build();
     }
 

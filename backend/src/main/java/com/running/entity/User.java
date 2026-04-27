@@ -18,10 +18,16 @@ public class User {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private String username;
+    private String usernameHash;
+
+    @Column(nullable = false)
+    private String usernameEncrypted;
 
     @Column(nullable = false, unique = true)
-    private String email;
+    private String emailHash;
+
+    @Column(nullable = false)
+    private String emailEncrypted;
 
     @Column(nullable = false)
     private String passwordHash;
@@ -36,9 +42,13 @@ public class User {
     private LocalDateTime createdAt;
 
     @Builder
-    public User(String username, String email, String passwordHash, String nickname, int profileImageId) {
-        this.username = username;
-        this.email = email;
+    public User(String usernameHash, String usernameEncrypted,
+                String emailHash, String emailEncrypted,
+                String passwordHash, String nickname, int profileImageId) {
+        this.usernameHash = usernameHash;
+        this.usernameEncrypted = usernameEncrypted;
+        this.emailHash = emailHash;
+        this.emailEncrypted = emailEncrypted;
         this.passwordHash = passwordHash;
         this.nickname = nickname;
         this.profileImageId = profileImageId;

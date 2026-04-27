@@ -6,7 +6,7 @@ spring:
     password:
   h2:
     console:
-      enabled: false
+      enabled: true
   jpa:
     hibernate:
       ddl-auto: update
@@ -23,5 +23,12 @@ server:
   port: 8080
 
 jwt:
-  secret: running-dashboard-jwt-secret-key-2024-v1
+  secret: ${JWT_SECRET:running-dashboard-jwt-secret-key-2024-v1}
   expiration-ms: 604800000
+
+encryption:
+  key: ${ENCRYPTION_KEY:running-dashboard-default-encrypt-key!}
+
+logging:
+  level:
+    com.running: DEBUG

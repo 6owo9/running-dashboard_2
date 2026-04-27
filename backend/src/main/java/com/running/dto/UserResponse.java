@@ -12,10 +12,10 @@ public class UserResponse {
     private String nickname;
     private Integer profileImageId;
 
-    public static UserResponse from(User user) {
+    public static UserResponse from(User user, String decryptedUsername) {
         return UserResponse.builder()
                 .id(user.getId())
-                .username(user.getUsername())
+                .username(decryptedUsername)
                 .nickname(user.getNickname())
                 .profileImageId(user.getProfileImageId())
                 .build();
