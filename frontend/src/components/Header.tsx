@@ -7,7 +7,6 @@ interface HeaderProps {
   isLoggedIn: boolean;
   user: AuthUser | null;
   onLoginClick: () => void;
-  onSignupClick: () => void;
   onProfileClick: () => void;
   onLogout: () => void;
 }
