@@ -8,6 +8,9 @@ import type { RunningRecord } from '../api/runningApi';
 import { deleteRecord, getRecords } from '../api/runningApi';
 import type { StatsSummary } from '../api/statsApi';
 import { getSummary } from '../api/statsApi';
+import type { HourlyWeather } from '../api/weatherApi';
+import { getHourlySlots } from '../api/weatherApi';
+import { wmoIcon } from '../assets/weather/icons';
 import AuthModal from '../components/AuthModal';
 import GoalModal from '../components/GoalModal';
 import Header from '../components/Header';
@@ -27,6 +30,13 @@ function fmtPace(p: number) {
   const min = Math.floor(p);
   const sec = Math.round((p - min) * 60);
   return `${min}'${String(sec).padStart(2, '0')}"`;
+}
+
+function fmtHour(hour: number): string {
+  if (hour === 0) return '오전 12시';
+  if (hour < 12) return `오전 ${hour}시`;
+  if (hour === 12) return '오후 12시';
+  return `오후 ${hour - 12}시`;
 }
 
 function formatDate(dateStr: string): string {
@@ -205,11 +215,29 @@ export default function MainPage() {
   const [goal, setGoal] = useState<Goal | null>(null);
   const [focusedId, setFocusedId] = useState<number | null>(null);
   const [mapZoom, setMapZoom] = useState(12);
+  const [weather, setWeather] = useState<HourlyWeather[]>([]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const routeLayersRef = useRef<L.LayerGroup | null>(null);
   const markerLayerRef = useRef<L.LayerGroup | null>(null);
+
+  // 현재 위치 날씨 조회
+  useEffect(() => {
+    const load = (lat: number, lon: number) =>
+      getHourlySlots(lat, lon)
+        .then(setWeather)
+        .catch(() => {});
+
+    if (!navigator.geolocation) {
+      load(37.3943, 127.1113);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => load(coords.latitude, coords.longitude),
+      () => load(37.3943, 127.1113)
+    );
+  }, []);
 
   // 지도 초기화
   useEffect(() => {
@@ -223,7 +251,7 @@ export default function MainPage() {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       maxZoom: 19,
     }).addTo(map);
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
+    L.control.zoom({ position: 'topright' }).addTo(map);
     routeLayersRef.current = L.layerGroup().addTo(map);
     markerLayerRef.current = L.layerGroup().addTo(map);
     map.on('zoomend', () => setMapZoom(map.getZoom()));
@@ -289,7 +317,13 @@ export default function MainPage() {
     const toRender = focusedId !== null ? allRecords.filter((r) => r.id === focusedId) : allRecords;
     const s = mapZoom >= 17 ? 1.6 : mapZoom >= 15 ? 1.3 : mapZoom >= 13 ? 1.0 : 0.75;
 
-    const makePin = (label: string, bg: string, border: string, textColor: string, dotColor: string) => {
+    const makePin = (
+      label: string,
+      bg: string,
+      border: string,
+      textColor: string,
+      dotColor: string
+    ) => {
       const fs = Math.round(9 * s);
       const pv = Math.round(3 * s);
       const ph = Math.round(8 * s);
@@ -441,6 +475,35 @@ export default function MainPage() {
                   <span className="text-sm text-muted-foreground bg-card px-4 py-2 rounded-full shadow-sm border border-border whitespace-nowrap">
                     러닝 기록이 없습니다.
                   </span>
+                </div>
+              )}
+
+              {weather.length === 5 && (
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
+                  <div className="flex items-center gap-1.5 sm:gap-2 bg-white/30 backdrop-blur-[2px] border border-white/50 rounded-lg shadow-lg px-1 py-1">
+                    {weather.map((slot, idx) => (
+                      <div
+                        key={slot.hour}
+                        className={`flex-col items-center gap-0.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg transition-all ${
+                          idx === 0 || idx === 4 ? 'hidden sm:flex' : 'flex'
+                        } ${slot.isActive ? 'bg-[rgba(100,160,240,0.9)] shadow-sm' : ''}`}
+                      >
+                        <span
+                          className={`text-[9px] sm:text-[10px] font-medium whitespace-nowrap ${
+                            slot.isActive ? 'text-white' : 'text-gray-500/90'
+                          }`}
+                        >
+                          {fmtHour(slot.hour)}
+                        </span>
+                        <img src={wmoIcon(slot.weatherCode)} alt="" className="w-5 h-5 sm:w-6 sm:h-6" />
+                        <span
+                          className={`text-xs sm:text-sm font-bold ${slot.isActive ? 'text-white' : 'text-gray-600/70'}`}
+                        >
+                          {slot.temp}°
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
