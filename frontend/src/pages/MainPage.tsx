@@ -1,6 +1,6 @@
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Activity, Clock, Gauge, Target, Timer, Trash2 } from 'lucide-react';
+import { Activity, Cctv, Clock, Gauge, Target, Timer, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Goal } from '../api/goalApi';
 import { getGoal } from '../api/goalApi';
@@ -190,6 +190,13 @@ function CalendarIcon() {
   );
 }
 
+const TEMP_CCTV = [
+  { id: 1, lat: 37.3962, lng: 127.1106, name: '삼평동 판교역 북측' },
+  { id: 2, lat: 37.401, lng: 127.1073, name: '삼평동 테크노밸리 A구역' },
+  { id: 3, lat: 37.3928, lng: 127.1142, name: '삼평동 판교IC 동측' },
+  { id: 4, lat: 37.3988, lng: 127.1148, name: '삼평동 알파돔 인근' },
+];
+
 const ROUTE_COLORS = [
   '#155dfc',
   '#0ea5e9',
@@ -216,11 +223,15 @@ export default function MainPage() {
   const [focusedId, setFocusedId] = useState<number | null>(null);
   const [mapZoom, setMapZoom] = useState(12);
   const [weather, setWeather] = useState<HourlyWeather[]>([]);
+  const [cctvOn, setCctvOn] = useState(false);
+  const [cctvModalOpen, setCctvModalOpen] = useState(false);
+  const [selectedCctvId, setSelectedCctvId] = useState<number | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const routeLayersRef = useRef<L.LayerGroup | null>(null);
   const markerLayerRef = useRef<L.LayerGroup | null>(null);
+  const cctvLayerRef = useRef<L.LayerGroup | null>(null);
 
   // 현재 위치 날씨 조회
   useEffect(() => {
@@ -254,6 +265,7 @@ export default function MainPage() {
     L.control.zoom({ position: 'topright' }).addTo(map);
     routeLayersRef.current = L.layerGroup().addTo(map);
     markerLayerRef.current = L.layerGroup().addTo(map);
+    cctvLayerRef.current = L.layerGroup();
     map.on('zoomend', () => setMapZoom(map.getZoom()));
     mapRef.current = map;
     return () => {
@@ -261,6 +273,7 @@ export default function MainPage() {
       mapRef.current = null;
       routeLayersRef.current = null;
       markerLayerRef.current = null;
+      cctvLayerRef.current = null;
     };
   }, []);
 
@@ -361,6 +374,46 @@ export default function MainPage() {
       );
     });
   }, [allRecords, focusedId, mapZoom]);
+
+  // CCTV 레이어 토글 + active 마커
+  useEffect(() => {
+    const map = mapRef.current;
+    const layer = cctvLayerRef.current;
+    if (!map || !layer) return;
+
+    if (cctvOn) {
+      layer.clearLayers();
+      TEMP_CCTV.forEach(({ id, lat, lng, name }) => {
+        const isActive = id === selectedCctvId;
+        const bg = isActive ? '#155dfc' : '#94a3b8';
+        const icon = L.divIcon({
+          className: '',
+          html: `<div style="background:${bg};border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.25);cursor:pointer">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16.75 12h3.632a1 1 0 0 1 .894 1.447l-2.034 4.069a1 1 0 0 1-1.708.134l-2.124-2.97"/>
+              <path d="M17.106 9.053a1 1 0 0 1 .447 1.341l-3.106 6.211a1 1 0 0 1-1.342.447L3.61 12.3a2.92 2.92 0 0 1-1.3-3.91L3.69 5.6a2.92 2.92 0 0 1 3.92-1.3z"/>
+              <path d="M2 19h3.76a2 2 0 0 0 1.8-1.1L9 15"/>
+              <path d="M2 21v-4"/>
+              <path d="M7 9h.01"/>
+            </svg>
+          </div>`,
+          iconSize: [22, 22],
+          iconAnchor: [11, 11],
+        });
+        L.marker([lat, lng], { icon })
+          .bindTooltip(name, { permanent: false, direction: 'top', offset: [0, -8] })
+          .on('click', () => {
+            setSelectedCctvId(id);
+            if (window.innerWidth < 768) setCctvModalOpen(true);
+          })
+          .addTo(layer);
+      });
+      layer.addTo(map);
+    } else {
+      setSelectedCctvId(null);
+      layer.remove();
+    }
+  }, [cctvOn, selectedCctvId]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -470,6 +523,53 @@ export default function MainPage() {
             <div className="relative h-[300px] sm:h-[600px] bg-muted">
               <div ref={containerRef} className="absolute inset-0 isolate" />
 
+              {/* CCTV 토글 버튼 — Leaflet 줌 컨트롤 아래 (touch 30px 기준: 10+30+1+30+9gap=80px) */}
+              <div className="absolute top-[80px] right-[10px] z-[400]">
+                <button
+                  onClick={() => setCctvOn((v) => !v)}
+                  title={cctvOn ? 'CCTV OFF' : 'CCTV ON'}
+                  className={`flex flex-col items-center justify-center gap-[2px] w-[34px] h-10 border-2 border-black/20  rounded-[4px] transition-colors select-none ${
+                    cctvOn ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 hover:bg-[#f4f4f4]'
+                  }`}
+                >
+                  <Cctv size={14} />
+                  <span className="text-[8px] font-bold leading-none">{cctvOn ? 'ON' : 'OFF'}</span>
+                </button>
+              </div>
+
+              {/* CCTV 활성 뱃지 */}
+              {cctvOn && (
+                <div className="absolute top-3 left-3 z-[400] pointer-events-none">
+                  <span className="flex items-center gap-1.5 text-[11px] font-semibold bg-blue-500 text-white px-2.5 py-1 rounded-full shadow-md">
+                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                    CCTV 레이어 활성
+                  </span>
+                </div>
+              )}
+
+              {/* 데스크탑 CCTV 패널 */}
+              {cctvOn && selectedCctvId !== null && (
+                <div className="absolute top-12 left-3 z-[400] hidden md:block bg-white rounded-lg shadow-lg border border-border w-52 overflow-hidden">
+                  <div className="flex items-center justify-between px-3 py-2 border-b border-border">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />
+                      <span className="text-[11px] font-semibold text-foreground truncate">
+                        {TEMP_CCTV.find((c) => c.id === selectedCctvId)?.name}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setSelectedCctvId(null)}
+                      className="ml-2 flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                  <div className="h-28 bg-black/5 flex items-center justify-center">
+                    <span className="text-xs text-muted-foreground">영상 준비 중</span>
+                  </div>
+                </div>
+              )}
+
               {allRecords.length === 0 && (
                 <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[50] pointer-events-none">
                   <span className="text-sm text-muted-foreground bg-card px-4 py-2 rounded-full shadow-sm border border-border whitespace-nowrap">
@@ -495,7 +595,11 @@ export default function MainPage() {
                         >
                           {fmtHour(slot.hour)}
                         </span>
-                        <img src={wmoIcon(slot.weatherCode)} alt="" className="w-5 h-5 sm:w-6 sm:h-6" />
+                        <img
+                          src={wmoIcon(slot.weatherCode)}
+                          alt=""
+                          className="w-5 h-5 sm:w-6 sm:h-6"
+                        />
                         <span
                           className={`text-xs sm:text-sm font-bold ${slot.isActive ? 'text-white' : 'text-gray-600/70'}`}
                         >
@@ -602,6 +706,31 @@ export default function MainPage() {
           </section>
         </div>
       </main>
+
+      {/* 모바일 CCTV 모달 — 768px 이하에서만 표시, 내부는 추후 CCTV 영상 삽입 */}
+      {cctvModalOpen && (
+        <div className="fixed inset-0 z-[9999] bg-black/90 flex flex-col md:hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+            <div className="flex items-center gap-2 text-white">
+              <Cctv size={16} />
+              <span className="text-sm font-semibold">
+                {TEMP_CCTV.find((c) => c.id === selectedCctvId)?.name ?? 'CCTV'}
+              </span>
+            </div>
+            <button
+              onClick={() => {
+                setCctvModalOpen(false);
+                setSelectedCctvId(null);
+              }}
+              className="w-8 h-8 flex items-center justify-center rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              <X size={18} />
+            </button>
+          </div>
+          {/* 추후 CCTV 영상 삽입 */}
+          <div className="flex-1" />
+        </div>
+      )}
 
       <UploadModal
         isOpen={uploadOpen}
