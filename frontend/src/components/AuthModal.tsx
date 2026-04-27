@@ -14,6 +14,32 @@ type Tab = 'login' | 'signup'
 
 const SPECIAL_CHAR = /[!@#$%^&*(),.?":{}|<>]/
 
+function KakaoLoginButton() {
+  const handleClick = () => {
+    const clientId = import.meta.env.VITE_KAKAO_CLIENT_ID
+    const redirectUri = import.meta.env.VITE_KAKAO_REDIRECT_URI
+    window.location.href =
+      `https://kauth.kakao.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code`
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-medium transition-opacity hover:opacity-90"
+      style={{ backgroundColor: '#FEE500', color: '#000000' }}
+    >
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path
+          d="M9 1.5C4.858 1.5 1.5 4.186 1.5 7.5c0 2.138 1.337 4.013 3.352 5.086-.115.426-.732 2.74-.76 2.944 0 0-.015.132.07.182.084.05.182.012.182.012.24-.033 2.783-1.832 3.292-2.183.44.064.895.096 1.364.096 4.142 0 7.5-2.686 7.5-6S13.142 1.5 9 1.5z"
+          fill="#000000"
+        />
+      </svg>
+      카카오로 로그인
+    </button>
+  )
+}
+
 export default function AuthModal({ isOpen, onClose, onSuccess, initialTab = 'login' }: Props) {
   const [tab, setTab] = useState<Tab>(initialTab)
   const [loading, setLoading] = useState(false)
@@ -92,7 +118,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialTab = 'lo
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" onClick={onClose}>
+    <div className="fixed inset-0 z-[500] flex items-end sm:items-center justify-center" onClick={onClose}>
       <div className="absolute inset-0 bg-black/40" />
       <div
         className="relative bg-card w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl shadow-xl"
@@ -161,6 +187,12 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialTab = 'lo
               >
                 {loading ? '로그인 중...' : '로그인'}
               </button>
+              <div className="flex items-center gap-3 my-1">
+                <div className="flex-1 h-px bg-border" />
+                <span className="text-xs text-muted-foreground">또는</span>
+                <div className="flex-1 h-px bg-border" />
+              </div>
+              <KakaoLoginButton />
             </form>
           ) : (
             <form onSubmit={handleSignup} className="flex flex-col gap-3">

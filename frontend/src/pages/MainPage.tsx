@@ -2,6 +2,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Activity, Cctv, Clock, Gauge, Target, Timer, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { kakaoCallback } from '../api/authApi';
 import type { Goal } from '../api/goalApi';
 import { getGoal } from '../api/goalApi';
 import type { RunningRecord } from '../api/runningApi';
@@ -232,6 +233,18 @@ export default function MainPage() {
   const routeLayersRef = useRef<L.LayerGroup | null>(null);
   const markerLayerRef = useRef<L.LayerGroup | null>(null);
   const cctvLayerRef = useRef<L.LayerGroup | null>(null);
+
+  // 카카오 OAuth 콜백 처리
+  useEffect(() => {
+    if (window.location.pathname !== '/auth/kakao/callback') return;
+    const code = new URLSearchParams(window.location.search).get('code');
+    // URL 즉시 정리 — StrictMode 이중 실행 시 두 번째는 경로가 '/'라 조기 종료됨
+    window.history.replaceState({}, '', '/');
+    if (!code) return;
+    kakaoCallback(code)
+      .then((res) => login(res.token, res.user))
+      .catch(() => {});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 현재 위치 날씨 조회
   useEffect(() => {

@@ -29,6 +29,11 @@ jwt:
 encryption:
   key: ${ENCRYPTION_KEY:running-dashboard-default-encrypt-key!}
 
+kakao:
+  client-id: ${KAKAO_CLIENT_ID:edcbde68b1e46748153e15d358a09ea5}
+  client-secret: ${KAKAO_CLIENT_SECRET:3ea8aIUDWVyPSNBHSRqeDGQ49DCn0V5b}
+  redirect-uri: ${KAKAO_REDIRECT_URI:http://localhost:5173/auth/kakao/callback}
+
 logging:
   level:
     com.running: DEBUG

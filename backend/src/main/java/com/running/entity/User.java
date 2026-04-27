@@ -29,7 +29,10 @@ public class User {
     @Column(nullable = false)
     private String emailEncrypted;
 
-    @Column(nullable = false)
+    @Column(unique = true)
+    private Long kakaoId;
+
+    @Column
     private String passwordHash;
 
     @Column(nullable = false)
@@ -50,6 +53,19 @@ public class User {
         this.emailHash = emailHash;
         this.emailEncrypted = emailEncrypted;
         this.passwordHash = passwordHash;
+        this.nickname = nickname;
+        this.profileImageId = profileImageId;
+        this.createdAt = LocalDateTime.now();
+    }
+
+    @Builder(builderMethodName = "kakaoBuilder")
+    public User(Long kakaoId, String usernameHash, String usernameEncrypted,
+                String emailHash, String emailEncrypted, String nickname, int profileImageId) {
+        this.kakaoId = kakaoId;
+        this.usernameHash = usernameHash;
+        this.usernameEncrypted = usernameEncrypted;
+        this.emailHash = emailHash;
+        this.emailEncrypted = emailEncrypted;
         this.nickname = nickname;
         this.profileImageId = profileImageId;
         this.createdAt = LocalDateTime.now();

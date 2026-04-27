@@ -57,6 +57,12 @@ export async function updateProfile(
   )
 }
 
+export async function kakaoCallback(code: string): Promise<LoginResponse> {
+  return handleResponse<LoginResponse>(
+    await fetch(`/api/auth/kakao/callback?code=${encodeURIComponent(code)}`)
+  )
+}
+
 export async function changePassword(
   token: string,
   data: { currentPassword: string; newPassword: string }
