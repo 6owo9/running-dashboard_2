@@ -141,7 +141,7 @@ export default function UploadModal({ isOpen, onClose, onUploaded, records, toke
   const filtered = selectedDate ? records.filter(r => r.date === selectedDate) : records
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" onClick={onClose}>
+    <div className="fixed inset-0 z-[500] flex items-end sm:items-center justify-center" onClick={onClose}>
       <div className="absolute inset-0 bg-black/40" />
       <div
         className="relative bg-card w-full sm:max-w-2xl rounded-t-2xl sm:rounded-2xl max-h-[92vh] overflow-y-auto shadow-xl"
