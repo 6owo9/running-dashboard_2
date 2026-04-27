@@ -204,10 +204,12 @@ export default function MainPage() {
   const [allRecords, setAllRecords] = useState<RunningRecord[]>([]);
   const [goal, setGoal] = useState<Goal | null>(null);
   const [focusedId, setFocusedId] = useState<number | null>(null);
+  const [mapZoom, setMapZoom] = useState(12);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const routeLayersRef = useRef<L.LayerGroup | null>(null);
+  const markerLayerRef = useRef<L.LayerGroup | null>(null);
 
   // 지도 초기화
   useEffect(() => {
@@ -223,11 +225,14 @@ export default function MainPage() {
     }).addTo(map);
     L.control.zoom({ position: 'bottomright' }).addTo(map);
     routeLayersRef.current = L.layerGroup().addTo(map);
+    markerLayerRef.current = L.layerGroup().addTo(map);
+    map.on('zoomend', () => setMapZoom(map.getZoom()));
     mapRef.current = map;
     return () => {
       map.remove();
       mapRef.current = null;
       routeLayersRef.current = null;
+      markerLayerRef.current = null;
     };
   }, []);
 
@@ -250,7 +255,7 @@ export default function MainPage() {
     refresh();
   }, [refresh]);
 
-  // 경로 렌더링 (focusedId 변경 시에도 재렌더)
+  // 폴리라인 렌더링
   useEffect(() => {
     if (!routeLayersRef.current) return;
     routeLayersRef.current.clearLayers();
@@ -263,17 +268,10 @@ export default function MainPage() {
       const color = focusedId !== null ? '#155dfc' : ROUTE_COLORS[idx % ROUTE_COLORS.length];
       L.polyline(r.coordinates, {
         color,
-        weight: 5,
+        weight: 3,
         opacity: 1,
         lineCap: 'round',
         lineJoin: 'round',
-      }).addTo(routeLayersRef.current!);
-      L.circleMarker(r.coordinates[0], {
-        radius: 7,
-        fillColor: color,
-        color: '#fff',
-        weight: 2,
-        fillOpacity: 1,
       }).addTo(routeLayersRef.current!);
       bounds.push(...r.coordinates);
     });
@@ -283,6 +281,53 @@ export default function MainPage() {
     }
   }, [allRecords, focusedId]);
 
+  // 마커 렌더링 — 줌 레벨에 따라 크기 변환
+  useEffect(() => {
+    if (!markerLayerRef.current) return;
+    markerLayerRef.current.clearLayers();
+
+    const toRender = focusedId !== null ? allRecords.filter((r) => r.id === focusedId) : allRecords;
+    const s = mapZoom >= 17 ? 1.6 : mapZoom >= 15 ? 1.3 : mapZoom >= 13 ? 1.0 : 0.75;
+
+    const makePin = (label: string, bg: string, border: string, textColor: string, dotColor: string) => {
+      const fs = Math.round(9 * s);
+      const pv = Math.round(3 * s);
+      const ph = Math.round(8 * s);
+      const br = Math.round(6 * s);
+      const stemH = Math.round(4 * s);
+      const dotD = Math.round(8 * s);
+      const badgeH = fs + pv * 2 + 3;
+      const totalH = badgeH + stemH + dotD + 4;
+      const w = Math.round(fs * 1.2 * 2 + ph * 2);
+      return L.divIcon({
+        className: '',
+        html: `<div style="display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 2px 5px rgba(0,0,0,0.14))">
+          <div style="background:${bg};border:1.5px solid ${border};color:${textColor};font-size:${fs}px;font-weight:700;padding:${pv}px ${ph}px;border-radius:${br}px;white-space:nowrap;letter-spacing:0.04em;line-height:1.2">${label}</div>
+          <div style="width:1.5px;height:${stemH}px;background:${dotColor}"></div>
+          <div style="width:${dotD}px;height:${dotD}px;border-radius:50%;background:${dotColor};border:2px solid #fff"></div>
+        </div>`,
+        iconAnchor: [w / 2, totalH],
+        iconSize: [w, totalH],
+      });
+    };
+
+    toRender.forEach((r) => {
+      if (!r.coordinates?.length) return;
+      markerLayerRef.current!.addLayer(
+        L.marker(r.coordinates[0], {
+          icon: makePin('출발', '#f8fafc', '#e2e8f0', '#475569', '#94a3b8'),
+          zIndexOffset: 1000,
+        })
+      );
+      markerLayerRef.current!.addLayer(
+        L.marker(r.coordinates[r.coordinates.length - 1], {
+          icon: makePin('도착', '#eff6ff', '#bfdbfe', '#2563eb', '#60a5fa'),
+          zIndexOffset: 1000,
+        })
+      );
+    });
+  }, [allRecords, focusedId, mapZoom]);
+
   return (
     <div className="min-h-screen bg-background">
       <Header
@@ -291,10 +336,6 @@ export default function MainPage() {
         user={user}
         onLoginClick={() => {
           setAuthInitTab('login');
-          setAuthOpen(true);
-        }}
-        onSignupClick={() => {
-          setAuthInitTab('signup');
           setAuthOpen(true);
         }}
         onProfileClick={() => setProfileOpen(true)}
