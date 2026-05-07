@@ -9,8 +9,8 @@ import type { RunningRecord } from '../api/runningApi';
 import { deleteRecord, getRecords } from '../api/runningApi';
 import type { StatsSummary } from '../api/statsApi';
 import { getSummary } from '../api/statsApi';
-import type { HourlyWeather } from '../api/weatherApi';
-import { getHourlySlots } from '../api/weatherApi';
+import type { CurrentWeather } from '../api/weatherApi';
+import { getCityName, getCurrentWeather } from '../api/weatherApi';
 import { wmoIcon } from '../assets/weather/icons';
 import AuthModal from '../components/AuthModal';
 import GoalModal from '../components/GoalModal';
@@ -33,12 +33,6 @@ function fmtPace(p: number) {
   return `${min}'${String(sec).padStart(2, '0')}"`;
 }
 
-function fmtHour(hour: number): string {
-  if (hour === 0) return '오전 12시';
-  if (hour < 12) return `오전 ${hour}시`;
-  if (hour === 12) return '오후 12시';
-  return `오후 ${hour - 12}시`;
-}
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('ko-KR', {
@@ -223,7 +217,7 @@ export default function MainPage() {
   const [goal, setGoal] = useState<Goal | null>(null);
   const [focusedId, setFocusedId] = useState<number | null>(null);
   const [mapZoom, setMapZoom] = useState(12);
-  const [weather, setWeather] = useState<HourlyWeather[]>([]);
+  const [weather, setWeather] = useState<CurrentWeather | null>(null);
   const [cctvOn, setCctvOn] = useState(false);
   const [cctvModalOpen, setCctvModalOpen] = useState(false);
   const [selectedCctvId, setSelectedCctvId] = useState<number | null>(null);
@@ -243,15 +237,15 @@ export default function MainPage() {
     if (!code) return;
     kakaoCallback(code)
       .then((res) => login(res.token, res.user))
-      .catch(() => {});
+      .catch((err) => alert(`카카오 로그인 실패: ${err.message}`));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 현재 위치 날씨 조회
   useEffect(() => {
-    const load = (lat: number, lon: number) =>
-      getHourlySlots(lat, lon)
-        .then(setWeather)
-        .catch(() => {});
+    const load = async (lat: number, lon: number) => {
+      const cityName = await getCityName(lat, lon);
+      getCurrentWeather(lat, lon, cityName).then(setWeather).catch(() => {});
+    };
 
     if (!navigator.geolocation) {
       load(37.3943, 127.1113);
@@ -422,6 +416,10 @@ export default function MainPage() {
           .addTo(layer);
       });
       layer.addTo(map);
+      if (selectedCctvId === null) {
+        const bounds = L.latLngBounds(TEMP_CCTV.map((c) => [c.lat, c.lng] as [number, number]));
+        map.fitBounds(bounds, { padding: [60, 60] });
+      }
     } else {
       setSelectedCctvId(null);
       layer.remove();
@@ -591,35 +589,40 @@ export default function MainPage() {
                 </div>
               )}
 
-              {weather.length === 5 && (
+              {weather && (
                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
-                  <div className="flex items-center gap-1.5 sm:gap-2 bg-white/30 backdrop-blur-[2px] border border-white/50 rounded-lg shadow-lg px-1 py-1">
-                    {weather.map((slot, idx) => (
-                      <div
-                        key={slot.hour}
-                        className={`flex-col items-center gap-0.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg transition-all ${
-                          idx === 0 || idx === 4 ? 'hidden sm:flex' : 'flex'
-                        } ${slot.isActive ? 'bg-[rgba(100,160,240,0.9)] shadow-sm' : ''}`}
-                      >
-                        <span
-                          className={`text-[9px] sm:text-[10px] font-medium whitespace-nowrap ${
-                            slot.isActive ? 'text-white' : 'text-gray-500/90'
-                          }`}
-                        >
-                          {fmtHour(slot.hour)}
-                        </span>
-                        <img
-                          src={wmoIcon(slot.weatherCode)}
-                          alt=""
-                          className="w-5 h-5 sm:w-6 sm:h-6"
-                        />
-                        <span
-                          className={`text-xs sm:text-sm font-bold ${slot.isActive ? 'text-white' : 'text-gray-600/70'}`}
-                        >
-                          {slot.temp}°
-                        </span>
+                  <div className="flex items-center gap-4 bg-[#fcfcfc] border border-[#d6d6d6] rounded-lg px-5 py-2.5 shadow-sm whitespace-nowrap">
+                    <img src={wmoIcon(weather.weatherCode)} alt="" className="w-8 h-8 shrink-0" />
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-0.5">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M8 2C10.7614 2 13 4.23858 13 7C13 8.12561 12.6277 9.16434 12 10C11.0878 11.2144 9.49993 13.0001 8 15C6.50007 13.0001 4.91223 11.2144 4 10C3.37231 9.16434 3 8.12561 3 7C3 4.23858 5.23858 2 8 2ZM8 5C6.89543 5 6 5.89543 6 7C6 8.10457 6.89543 9 8 9C9.10457 9 10 8.10457 10 7C10 5.89543 9.10457 5 8 5Z" fill="#303030"/>
+                          </svg>
+                          <span className="text-[14px] text-[#303030]">{weather.cityName}</span>
+                        </div>
+                        <div className="flex items-end gap-0.5">
+                          <span className="text-[18px] font-bold text-[#303030] leading-5">{weather.temp}</span>
+                          <span className="text-[13px] text-[#616161]">℃</span>
+                        </div>
                       </div>
-                    ))}
+                      <div className="flex items-center gap-5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[12px] text-[#616161]">습도</span>
+                          <div className="flex items-end gap-0.5 text-[14px]">
+                            <span className="font-medium text-[#303030]">{weather.humidity}</span>
+                            <span className="text-[#616161]">%</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[12px] text-[#616161]">풍속</span>
+                          <div className="flex items-end gap-0.5 text-[14px]">
+                            <span className="font-medium text-[#303030]">{weather.windSpeed}</span>
+                            <span className="text-[#616161]">m/s</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
