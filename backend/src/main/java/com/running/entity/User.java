@@ -71,6 +71,10 @@ public class User {
         this.createdAt = LocalDateTime.now();
     }
 
+    public void linkKakao(Long kakaoId) {
+        this.kakaoId = kakaoId;
+    }
+
     public void updateProfile(String nickname, int profileImageId) {
         this.nickname = nickname;
         this.profileImageId = profileImageId;

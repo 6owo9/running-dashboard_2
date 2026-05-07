@@ -51,7 +51,18 @@ public class KakaoAuthService {
             String email = userInfo.path("kakao_account").path("email").asText(null);
 
             User user = userRepository.findByKakaoId(kakaoId)
-                    .orElseGet(() -> createUser(kakaoId, nickname, email));
+                    .orElseGet(() -> {
+                        if (email != null && !email.isBlank()) {
+                            String emailHash = fieldEncryptor.hash(email);
+                            return userRepository.findByEmailHash(emailHash)
+                                    .map(existing -> {
+                                        existing.linkKakao(kakaoId);
+                                        return userRepository.save(existing);
+                                    })
+                                    .orElseGet(() -> createUser(kakaoId, nickname, email));
+                        }
+                        return createUser(kakaoId, nickname, email);
+                    });
 
             String token = jwtUtil.generate(user.getId(), user.getNickname());
             return LoginResponse.builder()
