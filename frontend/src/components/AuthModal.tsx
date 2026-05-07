@@ -15,9 +15,14 @@ type Tab = 'login' | 'signup'
 const SPECIAL_CHAR = /[!@#$%^&*(),.?":{}|<>]/
 
 function KakaoLoginButton() {
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
     const clientId = import.meta.env.VITE_KAKAO_CLIENT_ID
     const redirectUri = import.meta.env.VITE_KAKAO_REDIRECT_URI
+    if (!clientId || !redirectUri) {
+      alert('카카오 로그인 환경변수가 설정되지 않았습니다.')
+      return
+    }
     window.location.href =
       `https://kauth.kakao.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code`
   }
