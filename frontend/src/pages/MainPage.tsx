@@ -33,7 +33,6 @@ function fmtPace(p: number) {
   return `${min}'${String(sec).padStart(2, '0')}"`;
 }
 
-
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('ko-KR', {
     month: 'short',
@@ -244,7 +243,9 @@ export default function MainPage() {
   useEffect(() => {
     const load = async (lat: number, lon: number) => {
       const cityName = await getCityName(lat, lon);
-      getCurrentWeather(lat, lon, cityName).then(setWeather).catch(() => {});
+      getCurrentWeather(lat, lon, cityName)
+        .then(setWeather)
+        .catch(() => {});
     };
 
     if (!navigator.geolocation) {
@@ -407,13 +408,16 @@ export default function MainPage() {
           iconSize: [22, 22],
           iconAnchor: [11, 11],
         });
-        L.marker([lat, lng], { icon })
+        const popupHtml = `<div style="min-width:192px"><div style="display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid #e5e7eb"><span style="width:8px;height:8px;border-radius:50%;background:#3b82f6;display:inline-block;flex-shrink:0"></span><span style="font-size:11px;font-weight:600;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px">${name}</span></div><div style="height:96px;background:#f9fafb;display:flex;align-items:center;justify-content:center"><span style="font-size:12px;color:#9ca3af">영상 준비 중</span></div></div>`;
+        const m = L.marker([lat, lng], { icon })
+          .bindPopup(popupHtml, { closeButton: false, className: 'cctv-popup', offset: [0, -11] })
           .bindTooltip(name, { permanent: false, direction: 'top', offset: [0, -8] })
           .on('click', () => {
             setSelectedCctvId(id);
             if (window.innerWidth < 768) setCctvModalOpen(true);
           })
           .addTo(layer);
+        if (id === selectedCctvId && window.innerWidth >= 768) m.openPopup();
       });
       layer.addTo(map);
       if (selectedCctvId === null) {
@@ -550,7 +554,7 @@ export default function MainPage() {
 
               {/* CCTV 활성 뱃지 */}
               {cctvOn && (
-                <div className="absolute top-3 left-3 z-[400] pointer-events-none">
+                <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[400] pointer-events-none">
                   <span className="flex items-center gap-1.5 text-[11px] font-semibold bg-blue-500 text-white px-2.5 py-1 rounded-full shadow-md">
                     <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
                     CCTV 레이어 활성
@@ -558,28 +562,6 @@ export default function MainPage() {
                 </div>
               )}
 
-              {/* 데스크탑 CCTV 패널 */}
-              {cctvOn && selectedCctvId !== null && (
-                <div className="absolute top-12 left-3 z-[400] hidden md:block bg-white rounded-lg shadow-lg border border-border w-52 overflow-hidden">
-                  <div className="flex items-center justify-between px-3 py-2 border-b border-border">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />
-                      <span className="text-[11px] font-semibold text-foreground truncate">
-                        {TEMP_CCTV.find((c) => c.id === selectedCctvId)?.name}
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => setSelectedCctvId(null)}
-                      className="ml-2 flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      <X size={12} />
-                    </button>
-                  </div>
-                  <div className="h-28 bg-black/5 flex items-center justify-center">
-                    <span className="text-xs text-muted-foreground">영상 준비 중</span>
-                  </div>
-                </div>
-              )}
 
               {allRecords.length === 0 && (
                 <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[50] pointer-events-none">
@@ -590,19 +572,30 @@ export default function MainPage() {
               )}
 
               {weather && (
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
+                <div className="absolute top-3 left-3 z-[400] pointer-events-none">
                   <div className="flex items-center gap-4 bg-[#fcfcfc] border border-[#d6d6d6] rounded-lg px-5 py-2.5 shadow-sm whitespace-nowrap">
                     <img src={wmoIcon(weather.weatherCode)} alt="" className="w-8 h-8 shrink-0" />
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-0.5">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                            <path d="M8 2C10.7614 2 13 4.23858 13 7C13 8.12561 12.6277 9.16434 12 10C11.0878 11.2144 9.49993 13.0001 8 15C6.50007 13.0001 4.91223 11.2144 4 10C3.37231 9.16434 3 8.12561 3 7C3 4.23858 5.23858 2 8 2ZM8 5C6.89543 5 6 5.89543 6 7C6 8.10457 6.89543 9 8 9C9.10457 9 10 8.10457 10 7C10 5.89543 9.10457 5 8 5Z" fill="#303030"/>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                          >
+                            <path
+                              d="M8 2C10.7614 2 13 4.23858 13 7C13 8.12561 12.6277 9.16434 12 10C11.0878 11.2144 9.49993 13.0001 8 15C6.50007 13.0001 4.91223 11.2144 4 10C3.37231 9.16434 3 8.12561 3 7C3 4.23858 5.23858 2 8 2ZM8 5C6.89543 5 6 5.89543 6 7C6 8.10457 6.89543 9 8 9C9.10457 9 10 8.10457 10 7C10 5.89543 9.10457 5 8 5Z"
+                              fill="#303030"
+                            />
                           </svg>
                           <span className="text-[14px] text-[#303030]">{weather.cityName}</span>
                         </div>
                         <div className="flex items-end gap-0.5">
-                          <span className="text-[18px] font-bold text-[#303030] leading-5">{weather.temp}</span>
+                          <span className="text-[18px] font-bold text-[#303030] leading-5">
+                            {weather.temp}
+                          </span>
                           <span className="text-[13px] text-[#616161]">℃</span>
                         </div>
                       </div>
