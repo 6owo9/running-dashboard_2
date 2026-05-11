@@ -58,8 +58,9 @@ export async function updateProfile(
 }
 
 export async function kakaoCallback(code: string): Promise<LoginResponse> {
+  const redirectUri = import.meta.env.VITE_KAKAO_REDIRECT_URI
   return handleResponse<LoginResponse>(
-    await fetch(`/api/auth/kakao/callback?code=${encodeURIComponent(code)}`)
+    await fetch(`/api/auth/kakao/callback?code=${encodeURIComponent(code)}&redirectUri=${encodeURIComponent(redirectUri)}`)
   )
 }
 

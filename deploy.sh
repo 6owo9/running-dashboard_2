@@ -14,12 +14,14 @@ chmod -R o+r dist
 cd ..
 
 echo "=== 백엔드 빌드 (Windows Gradle 우회) ==="
-cmd.exe /c "cd /d C:\\Users\\seong\\Desktop\\star\\running-dashboard_2\\backend && gradlew.bat bootJar --no-daemon"
+cmd.exe /c "cd /d C:\\Users\\seong\\Desktop\\star\\running-dashboard_2\\backend && gradlew.bat clean bootJar --no-daemon"
 mkdir -p "$REPO_DIR/backend/build/libs"
+rm -f "$REPO_DIR/backend/build/libs/running-dashboard-0.0.1-SNAPSHOT.jar"
 cp "/mnt/c/Users/seong/Desktop/star/running-dashboard_2/backend/build/libs/running-dashboard-0.0.1-SNAPSHOT.jar" \
    "$REPO_DIR/backend/build/libs/running-dashboard-0.0.1-SNAPSHOT.jar"
 
 echo "=== 서비스 재시작 ==="
+sudo fuser -k 8080/tcp 2>/dev/null || true
 sudo systemctl restart running-backend
 sudo systemctl status running-backend --no-pager -l
 

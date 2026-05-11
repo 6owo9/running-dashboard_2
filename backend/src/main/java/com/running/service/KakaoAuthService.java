@@ -41,9 +41,9 @@ public class KakaoAuthService {
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
-    public LoginResponse kakaoLogin(String code) {
+    public LoginResponse kakaoLogin(String code, String redirectUri) {
         try {
-            String accessToken = fetchAccessToken(code);
+            String accessToken = fetchAccessToken(code, redirectUri);
             JsonNode userInfo = fetchUserInfo(accessToken);
 
             Long kakaoId = userInfo.get("id").asLong();
@@ -76,7 +76,7 @@ public class KakaoAuthService {
         }
     }
 
-    private String fetchAccessToken(String code) throws Exception {
+    private String fetchAccessToken(String code, String redirectUri) throws Exception {
         String body = "grant_type=authorization_code"
                 + "&client_id=" + URLEncoder.encode(clientId, StandardCharsets.UTF_8)
                 + "&client_secret=" + URLEncoder.encode(clientSecret, StandardCharsets.UTF_8)

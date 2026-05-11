@@ -18,8 +18,8 @@ public class KakaoAuthController {
     private final KakaoAuthService kakaoAuthService;
 
     @GetMapping("/callback")
-    public ResponseEntity<ApiResponse<LoginResponse>> callback(@RequestParam String code) {
-        LoginResponse result = kakaoAuthService.kakaoLogin(code);
+    public ResponseEntity<ApiResponse<LoginResponse>> callback(@RequestParam String code, @RequestParam String redirectUri) {
+        LoginResponse result = kakaoAuthService.kakaoLogin(code, redirectUri);
         return ResponseEntity.ok(ApiResponse.ok(result));
     }
 }
