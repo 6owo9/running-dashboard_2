@@ -562,7 +562,6 @@ export default function MainPage() {
                 </div>
               )}
 
-
               {allRecords.length === 0 && (
                 <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[50] pointer-events-none">
                   <span className="text-sm text-muted-foreground bg-card px-4 py-2 rounded-full shadow-sm border border-border whitespace-nowrap">

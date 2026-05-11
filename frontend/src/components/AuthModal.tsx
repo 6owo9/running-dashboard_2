@@ -1,31 +1,30 @@
-import { useEffect, useState } from 'react'
-import { X, Activity } from 'lucide-react'
-import { login, signup } from '../api/authApi'
-import type { AuthUser, LoginResponse } from '../api/authApi'
+import { Activity, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import type { AuthUser, LoginResponse } from '../api/authApi';
+import { login, signup } from '../api/authApi';
 
 interface Props {
-  isOpen: boolean
-  onClose: () => void
-  onSuccess: (token: string, user: AuthUser) => void
-  initialTab?: 'login' | 'signup'
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: (token: string, user: AuthUser) => void;
+  initialTab?: 'login' | 'signup';
 }
 
-type Tab = 'login' | 'signup'
+type Tab = 'login' | 'signup';
 
-const SPECIAL_CHAR = /[!@#$%^&*(),.?":{}|<>]/
+const SPECIAL_CHAR = /[!@#$%^&*(),.?":{}|<>]/;
 
 function KakaoLoginButton() {
   const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    const clientId = import.meta.env.VITE_KAKAO_CLIENT_ID
-    const redirectUri = import.meta.env.VITE_KAKAO_REDIRECT_URI
+    e.stopPropagation();
+    const clientId = import.meta.env.VITE_KAKAO_CLIENT_ID;
+    const redirectUri = import.meta.env.VITE_KAKAO_REDIRECT_URI;
     if (!clientId || !redirectUri) {
-      alert('카카오 로그인 환경변수가 설정되지 않았습니다.')
-      return
+      alert('카카오 로그인 환경변수가 설정되지 않았습니다.');
+      return;
     }
-    window.location.href =
-      `https://kauth.kakao.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code`
-  }
+    window.location.href = `https://kauth.kakao.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code`;
+  };
 
   return (
     <button
@@ -34,7 +33,13 @@ function KakaoLoginButton() {
       className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-medium transition-opacity hover:opacity-90"
       style={{ backgroundColor: '#FEE500', color: '#000000' }}
     >
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 18 18"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
         <path
           d="M9 1.5C4.858 1.5 1.5 4.186 1.5 7.5c0 2.138 1.337 4.013 3.352 5.086-.115.426-.732 2.74-.76 2.944 0 0-.015.132.07.182.084.05.182.012.182.012.24-.033 2.783-1.832 3.292-2.183.44.064.895.096 1.364.096 4.142 0 7.5-2.686 7.5-6S13.142 1.5 9 1.5z"
           fill="#000000"
@@ -42,92 +47,100 @@ function KakaoLoginButton() {
       </svg>
       카카오로 로그인
     </button>
-  )
+  );
 }
 
 export default function AuthModal({ isOpen, onClose, onSuccess, initialTab = 'login' }: Props) {
-  const [tab, setTab] = useState<Tab>(initialTab)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [tab, setTab] = useState<Tab>(initialTab);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [loginForm, setLoginForm] = useState({ username: '', password: '' })
+  const [loginForm, setLoginForm] = useState({ username: '', password: '' });
   const [signupForm, setSignupForm] = useState({
-    username: '', email: '', password: '', nickname: '',
-  })
+    username: '',
+    email: '',
+    password: '',
+    nickname: '',
+  });
 
   useEffect(() => {
     if (isOpen) {
-      setTab(initialTab)
-      setError(null)
-      setLoginForm({ username: '', password: '' })
-      setSignupForm({ username: '', email: '', password: '', nickname: '' })
+      setTab(initialTab);
+      setError(null);
+      setLoginForm({ username: '', password: '' });
+      setSignupForm({ username: '', email: '', password: '', nickname: '' });
     }
-  }, [isOpen, initialTab])
+  }, [isOpen, initialTab]);
 
   useEffect(() => {
-    document.body.style.overflow = isOpen ? 'hidden' : ''
-    return () => { document.body.style.overflow = '' }
-  }, [isOpen])
+    document.body.style.overflow = isOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (!loginForm.username || !loginForm.password) {
-      setError('아이디와 비밀번호를 입력해주세요.')
-      return
+      setError('아이디와 비밀번호를 입력해주세요.');
+      return;
     }
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
     try {
-      const res: LoginResponse = await login(loginForm.username, loginForm.password)
-      onSuccess(res.token, res.user)
-      onClose()
+      const res: LoginResponse = await login(loginForm.username, loginForm.password);
+      onSuccess(res.token, res.user);
+      onClose();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : '로그인에 실패했습니다.')
+      setError(e instanceof Error ? e.message : '로그인에 실패했습니다.');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const { username, email, password, nickname } = signupForm
+    e.preventDefault();
+    const { username, email, password, nickname } = signupForm;
     if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
-      setError('아이디는 3~20자의 영문, 숫자, 밑줄(_)만 사용할 수 있습니다.')
-      return
+      setError('아이디는 3~20자의 영문, 숫자, 밑줄(_)만 사용할 수 있습니다.');
+      return;
     }
     if (!email.includes('@')) {
-      setError('올바른 이메일 형식이 아닙니다.')
-      return
+      setError('올바른 이메일 형식이 아닙니다.');
+      return;
     }
     if (password.length < 8 || !SPECIAL_CHAR.test(password)) {
-      setError('비밀번호는 8자 이상, 특수문자를 포함해야 합니다.')
-      return
+      setError('비밀번호는 8자 이상, 특수문자를 포함해야 합니다.');
+      return;
     }
     if (!nickname.trim() || nickname.length > 20) {
-      setError('닉네임은 1~20자여야 합니다.')
-      return
+      setError('닉네임은 1~20자여야 합니다.');
+      return;
     }
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
     try {
-      const res: LoginResponse = await signup({ username, email, password, nickname })
-      onSuccess(res.token, res.user)
-      onClose()
+      const res: LoginResponse = await signup({ username, email, password, nickname });
+      onSuccess(res.token, res.user);
+      onClose();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : '회원가입에 실패했습니다.')
+      setError(e instanceof Error ? e.message : '회원가입에 실패했습니다.');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="fixed inset-0 z-[500] flex items-end sm:items-center justify-center" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[500] flex items-end sm:items-center justify-center"
+      onClick={onClose}
+    >
       <div className="absolute inset-0 bg-black/40" />
       <div
         className="relative bg-card w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl shadow-xl"
-        onClick={e => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* 헤더 */}
         <div className="flex items-center justify-between p-5 border-b border-border">
@@ -145,10 +158,13 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialTab = 'lo
 
         {/* 탭 */}
         <div className="flex border-b border-border">
-          {(['login', 'signup'] as Tab[]).map(t => (
+          {(['login', 'signup'] as Tab[]).map((t) => (
             <button
               key={t}
-              onClick={() => { setTab(t); setError(null) }}
+              onClick={() => {
+                setTab(t);
+                setError(null);
+              }}
               className={`flex-1 py-3 text-sm font-medium transition-colors ${
                 tab === t
                   ? 'text-primary border-b-2 border-primary'
@@ -170,7 +186,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialTab = 'lo
                 <input
                   type="text"
                   value={loginForm.username}
-                  onChange={e => setLoginForm(f => ({ ...f, username: e.target.value }))}
+                  onChange={(e) => setLoginForm((f) => ({ ...f, username: e.target.value }))}
                   placeholder="아이디 입력"
                   className="mt-1 w-full border border-border rounded-xl px-4 py-2.5 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 />
@@ -180,7 +196,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialTab = 'lo
                 <input
                   type="password"
                   value={loginForm.password}
-                  onChange={e => setLoginForm(f => ({ ...f, password: e.target.value }))}
+                  onChange={(e) => setLoginForm((f) => ({ ...f, password: e.target.value }))}
                   placeholder="비밀번호 입력"
                   className="mt-1 w-full border border-border rounded-xl px-4 py-2.5 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 />
@@ -194,7 +210,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialTab = 'lo
               </button>
               <div className="flex items-center gap-3 my-1">
                 <div className="flex-1 h-px bg-border" />
-                <span className="text-xs text-muted-foreground">또는</span>
+                <span className="text-xs text-muted-foreground">간편 로그인</span>
                 <div className="flex-1 h-px bg-border" />
               </div>
               <KakaoLoginButton />
@@ -206,7 +222,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialTab = 'lo
                 <input
                   type="text"
                   value={signupForm.username}
-                  onChange={e => setSignupForm(f => ({ ...f, username: e.target.value }))}
+                  onChange={(e) => setSignupForm((f) => ({ ...f, username: e.target.value }))}
                   placeholder="3~20자 영문, 숫자, 밑줄"
                   className="mt-1 w-full border border-border rounded-xl px-4 py-2.5 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 />
@@ -216,7 +232,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialTab = 'lo
                 <input
                   type="email"
                   value={signupForm.email}
-                  onChange={e => setSignupForm(f => ({ ...f, email: e.target.value }))}
+                  onChange={(e) => setSignupForm((f) => ({ ...f, email: e.target.value }))}
                   placeholder="이메일 입력"
                   className="mt-1 w-full border border-border rounded-xl px-4 py-2.5 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 />
@@ -226,7 +242,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialTab = 'lo
                 <input
                   type="password"
                   value={signupForm.password}
-                  onChange={e => setSignupForm(f => ({ ...f, password: e.target.value }))}
+                  onChange={(e) => setSignupForm((f) => ({ ...f, password: e.target.value }))}
                   placeholder="8자 이상, 특수문자 포함"
                   className="mt-1 w-full border border-border rounded-xl px-4 py-2.5 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 />
@@ -236,7 +252,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialTab = 'lo
                 <input
                   type="text"
                   value={signupForm.nickname}
-                  onChange={e => setSignupForm(f => ({ ...f, nickname: e.target.value }))}
+                  onChange={(e) => setSignupForm((f) => ({ ...f, nickname: e.target.value }))}
                   placeholder="표시될 이름"
                   className="mt-1 w-full border border-border rounded-xl px-4 py-2.5 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                 />
@@ -253,5 +269,5 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialTab = 'lo
         </div>
       </div>
     </div>
-  )
+  );
 }
