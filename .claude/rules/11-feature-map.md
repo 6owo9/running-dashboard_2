@@ -1,21 +1,31 @@
-# 지도 시각화 전문가(Map Visualization Specialist) 규칙
+# 지도 / CCTV 기능 규칙
 
-## 역할
-- GPX 데이터를 기반으로 Leaflet.js 지도를 구현하고 최적화한다.
-- 경로(Polyline)와 마커 간의 데이터 시각화 정합성을 책임진다.
+## 지도
 
-## 지도 구현 원칙 (Leaflet.js)
-- **자동 포커스:** 경로 데이터가 로드되면 `map.fitBounds()`를 사용하여 전체 경로가 화면에 꽉 차도록 뷰를 자동 조정한다.
-- **가독성:** 러닝 경로는 눈에 잘 띄는 색상(예: `#3b82f6`)과 적절한 두께(`weight: 3~5`)를 유지한다.
-- **성능 최적화:**
-  - 좌표 데이터가 너무 방대할 경우 `L.polyline`의 `smoothFactor` 옵션을 조정하거나 단순화 알고리즘을 적용한다.
-  - 불필요한 레이어 중복 렌더링을 방지한다.
+- Leaflet 지도 인스턴스는 `useRef`로 관리한다.
+- 레이어는 기능별로 분리하고 unmount 시 제거한다.
+- 경로 표시, 현재 위치, CCTV 마커가 서로 불필요하게 덮어쓰지 않게 한다.
+- `fitBounds`는 사용자의 수동 이동을 과도하게 방해하지 않도록 조건을 둔다.
 
-## 핵심 검증 사항
-- **좌표 역전 방지:** GPX 파싱 결과인 [위도, 경도] 순서가 Leaflet의 [lat, lng] 포맷과 일치하는지 반드시 확인한다.
-- **빈 데이터 처리:** 표시할 경로가 없을 경우 지도가 깨지지 않고 "기록이 없습니다" 안내 문구와 함께 기본 위치(서울 시청)를 보여준다.
-- **새로고침 대응:** 새로고침 후에도 데이터가 유지되는지 확인한다. (백엔드 H2 File 모드로 영속성 보장)
+## CCTV
 
-## 협업 가이드
-- **With 10-feature-gpx:** 파서가 넘겨준 JSON 배열이 지도 라이브러리가 바로 사용할 수 있는 형태인지 확인한다.
-- **With 02-frontend:** Tailwind CSS 레이아웃 안에서 지도가 컨테이너 밖으로 튀어나가지 않도록 스타일링을 조율한다.
+- 프론트 API 래퍼: `frontend/src/api/cctvApi.ts`
+- 백엔드 컨트롤러: `backend/src/main/java/com/running/controller/CctvController.java`
+- 백엔드 서비스: `backend/src/main/java/com/running/service/CctvService.java`
+- API 키 설정: `ITS_API_KEY`
+
+## CCTV 구현 규칙
+
+- API 키가 없으면 서버가 실패하지 않고 빈 목록을 반환한다.
+- 외부 ITS API 호출 실패는 로그를 남기고 프론트에는 안정적인 응답을 준다.
+- 지도 bounds 기준으로 CCTV를 조회한다.
+- 지도 이동 후 재조회가 필요한 경우 debounce를 적용한다.
+- `cctvurl`, `cctvname`, `coordx`, `coordy` 필드는 프론트 타입과 백엔드 DTO가 일치해야 한다.
+
+## QA 시나리오
+
+- CCTV 토글 ON/OFF
+- API 키 없음
+- 외부 API 실패
+- 모바일에서 CCTV 마커 클릭 후 모달 표시
+- 데스크톱에서 팝업 영상 표시

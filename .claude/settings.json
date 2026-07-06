@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Grep",
+      "Glob",
+      "Edit",
+      "Bash(pnpm run *)",
+      "Bash(./gradlew *)",
+      "Bash(./gradlew.bat *)",
+      "Bash(git status *)",
+      "Bash(git diff *)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(curl *token*)",
+      "Bash(curl *secret*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "command": "bash .claude/hooks/format-on-save.sh"
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "command": "bash .claude/hooks/block-secrets.sh"
+      }
+    ]
+  },
+  "env": {
+    "NODE_ENV": "development"
+  }
+}
