@@ -34,6 +34,9 @@ kakao:
   client-secret: ${KAKAO_CLIENT_SECRET:3ea8aIUDWVyPSNBHSRqeDGQ49DCn0V5b}
   redirect-uri: ${KAKAO_REDIRECT_URI:http://localhost:5173/auth/kakao/callback}
 
+its:
+  api-key: ${ITS_API_KEY:}
+
 logging:
   level:
     com.running: DEBUG

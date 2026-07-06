@@ -3,6 +3,8 @@ import 'leaflet/dist/leaflet.css';
 import { Activity, Cctv, Clock, Gauge, Target, Timer, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { kakaoCallback } from '../api/authApi';
+import type { CctvItem } from '../api/cctvApi';
+import { getCctvList } from '../api/cctvApi';
 import type { Goal } from '../api/goalApi';
 import { getGoal } from '../api/goalApi';
 import type { RunningRecord } from '../api/runningApi';
@@ -184,12 +186,6 @@ function CalendarIcon() {
   );
 }
 
-const TEMP_CCTV = [
-  { id: 1, lat: 37.3962, lng: 127.1106, name: '삼평동 판교역 북측' },
-  { id: 2, lat: 37.401, lng: 127.1073, name: '삼평동 테크노밸리 A구역' },
-  { id: 3, lat: 37.3928, lng: 127.1142, name: '삼평동 판교IC 동측' },
-  { id: 4, lat: 37.3988, lng: 127.1148, name: '삼평동 알파돔 인근' },
-];
 
 const ROUTE_COLORS = [
   '#155dfc',
@@ -219,7 +215,8 @@ export default function MainPage() {
   const [weather, setWeather] = useState<CurrentWeather | null>(null);
   const [cctvOn, setCctvOn] = useState(false);
   const [cctvModalOpen, setCctvModalOpen] = useState(false);
-  const [selectedCctvId, setSelectedCctvId] = useState<number | null>(null);
+  const [selectedCctvId, setSelectedCctvId] = useState<string | null>(null);
+  const [cctvData, setCctvData] = useState<CctvItem[]>([]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -383,52 +380,79 @@ export default function MainPage() {
     });
   }, [allRecords, focusedId, mapZoom]);
 
-  // CCTV 레이어 토글 + active 마커
+  // CCTV ON/OFF 시 API 호출 or 레이어 제거
   useEffect(() => {
     const map = mapRef.current;
     const layer = cctvLayerRef.current;
     if (!map || !layer) return;
 
-    if (cctvOn) {
-      layer.clearLayers();
-      TEMP_CCTV.forEach(({ id, lat, lng, name }) => {
-        const isActive = id === selectedCctvId;
-        const bg = isActive ? '#155dfc' : '#94a3b8';
-        const icon = L.divIcon({
-          className: '',
-          html: `<div style="background:${bg};border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.25);cursor:pointer">
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M16.75 12h3.632a1 1 0 0 1 .894 1.447l-2.034 4.069a1 1 0 0 1-1.708.134l-2.124-2.97"/>
-              <path d="M17.106 9.053a1 1 0 0 1 .447 1.341l-3.106 6.211a1 1 0 0 1-1.342.447L3.61 12.3a2.92 2.92 0 0 1-1.3-3.91L3.69 5.6a2.92 2.92 0 0 1 3.92-1.3z"/>
-              <path d="M2 19h3.76a2 2 0 0 0 1.8-1.1L9 15"/>
-              <path d="M2 21v-4"/>
-              <path d="M7 9h.01"/>
-            </svg>
-          </div>`,
-          iconSize: [22, 22],
-          iconAnchor: [11, 11],
-        });
-        const popupHtml = `<div style="min-width:192px"><div style="display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid #e5e7eb"><span style="width:8px;height:8px;border-radius:50%;background:#3b82f6;display:inline-block;flex-shrink:0"></span><span style="font-size:11px;font-weight:600;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px">${name}</span></div><div style="height:96px;background:#f9fafb;display:flex;align-items:center;justify-content:center"><span style="font-size:12px;color:#9ca3af">영상 준비 중</span></div></div>`;
-        const m = L.marker([lat, lng], { icon })
-          .bindPopup(popupHtml, { closeButton: false, className: 'cctv-popup', offset: [0, -11] })
-          .bindTooltip(name, { permanent: false, direction: 'top', offset: [0, -8] })
-          .on('click', () => {
-            setSelectedCctvId(id);
-            if (window.innerWidth < 768) setCctvModalOpen(true);
-          })
-          .addTo(layer);
-        if (id === selectedCctvId && window.innerWidth >= 768) m.openPopup();
-      });
-      layer.addTo(map);
-      if (selectedCctvId === null) {
-        const bounds = L.latLngBounds(TEMP_CCTV.map((c) => [c.lat, c.lng] as [number, number]));
-        map.fitBounds(bounds, { padding: [60, 60] });
-      }
-    } else {
+    if (!cctvOn) {
       setSelectedCctvId(null);
+      setCctvData([]);
       layer.remove();
+      return;
     }
-  }, [cctvOn, selectedCctvId]);
+
+    const b = map.getBounds();
+    getCctvList(b.getWest(), b.getEast(), b.getSouth(), b.getNorth())
+      .then(setCctvData)
+      .catch(() => setCctvData([]));
+  }, [cctvOn]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // CCTV 마커 렌더링
+  useEffect(() => {
+    const map = mapRef.current;
+    const layer = cctvLayerRef.current;
+    if (!map || !layer || !cctvOn) return;
+
+    layer.clearLayers();
+    cctvData.forEach(({ cctvname, cctvurl, coordx, coordy }) => {
+      const isActive = cctvname === selectedCctvId;
+      const bg = isActive ? '#155dfc' : '#94a3b8';
+      const icon = L.divIcon({
+        className: '',
+        html: `<div style="background:${bg};border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.25);cursor:pointer">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16.75 12h3.632a1 1 0 0 1 .894 1.447l-2.034 4.069a1 1 0 0 1-1.708.134l-2.124-2.97"/>
+            <path d="M17.106 9.053a1 1 0 0 1 .447 1.341l-3.106 6.211a1 1 0 0 1-1.342.447L3.61 12.3a2.92 2.92 0 0 1-1.3-3.91L3.69 5.6a2.92 2.92 0 0 1 3.92-1.3z"/>
+            <path d="M2 19h3.76a2 2 0 0 0 1.8-1.1L9 15"/>
+            <path d="M2 21v-4"/>
+            <path d="M7 9h.01"/>
+          </svg>
+        </div>`,
+        iconSize: [22, 22],
+        iconAnchor: [11, 11],
+      });
+      const popupHtml = `<div style="min-width:192px">
+        <div style="display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid #e5e7eb">
+          <span style="width:8px;height:8px;border-radius:50%;background:#3b82f6;display:inline-block;flex-shrink:0"></span>
+          <span style="font-size:11px;font-weight:600;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px">${cctvname}</span>
+        </div>
+        <img src="${cctvurl}" alt="${cctvname}"
+          onload="setTimeout(()=>{this.src='${cctvurl}?t='+Date.now()},5000)"
+          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+          style="width:192px;height:108px;object-fit:cover;display:block">
+        <div style="height:108px;background:#f9fafb;display:none;align-items:center;justify-content:center">
+          <span style="font-size:12px;color:#9ca3af">영상 없음</span>
+        </div>
+      </div>`;
+      const m = L.marker([coordy, coordx], { icon })
+        .bindPopup(popupHtml, { closeButton: false, className: 'cctv-popup', offset: [0, -11] })
+        .bindTooltip(cctvname, { permanent: false, direction: 'top', offset: [0, -8] })
+        .on('click', () => {
+          setSelectedCctvId(cctvname);
+          if (window.innerWidth < 768) setCctvModalOpen(true);
+        })
+        .addTo(layer);
+      if (cctvname === selectedCctvId && window.innerWidth >= 768) m.openPopup();
+    });
+    layer.addTo(map);
+
+    if (selectedCctvId === null && cctvData.length > 0) {
+      const bounds = L.latLngBounds(cctvData.map((c) => [c.coordy, c.coordx] as [number, number]));
+      map.fitBounds(bounds, { padding: [60, 60] });
+    }
+  }, [cctvData, selectedCctvId, cctvOn]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -715,15 +739,13 @@ export default function MainPage() {
         </div>
       </main>
 
-      {/* 모바일 CCTV 모달 — 768px 이하에서만 표시, 내부는 추후 CCTV 영상 삽입 */}
+      {/* 모바일 CCTV 모달 — 768px 이하에서만 표시 */}
       {cctvModalOpen && (
         <div className="fixed inset-0 z-[9999] bg-black/90 flex flex-col md:hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
             <div className="flex items-center gap-2 text-white">
               <Cctv size={16} />
-              <span className="text-sm font-semibold">
-                {TEMP_CCTV.find((c) => c.id === selectedCctvId)?.name ?? 'CCTV'}
-              </span>
+              <span className="text-sm font-semibold">{selectedCctvId ?? 'CCTV'}</span>
             </div>
             <button
               onClick={() => {
@@ -735,8 +757,16 @@ export default function MainPage() {
               <X size={18} />
             </button>
           </div>
-          {/* 추후 CCTV 영상 삽입 */}
-          <div className="flex-1" />
+          <div className="flex-1 flex items-center justify-center p-4">
+            {(() => {
+              const cctv = cctvData.find((c) => c.cctvname === selectedCctvId);
+              return cctv ? (
+                <img src={cctv.cctvurl} alt={cctv.cctvname} className="w-full max-h-full object-contain" />
+              ) : (
+                <span className="text-white/50 text-sm">영상 없음</span>
+              );
+            })()}
+          </div>
         </div>
       )}
 

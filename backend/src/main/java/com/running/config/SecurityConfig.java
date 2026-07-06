@@ -41,6 +41,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/running-records/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/stats/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/goals/current").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/cctv").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/", "/index.html", "/assets/**", "/favicon.svg", "/icons.svg").permitAll()
                         .anyRequest().authenticated()
