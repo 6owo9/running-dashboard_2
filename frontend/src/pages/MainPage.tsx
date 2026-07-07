@@ -5,7 +5,13 @@ import { Activity, Cctv, Clock, Gauge, Target, Timer, Trash2, X } from 'lucide-r
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { kakaoCallback } from '../api/authApi';
 import type { CctvItem } from '../api/cctvApi';
-import { getCctvHlsUrl, getCctvImageUrl, getCctvList, getCctvStreamProxyUrl, getCctvStreamUrl } from '../api/cctvApi';
+import {
+  getCctvHlsUrl,
+  getCctvImageUrl,
+  getCctvList,
+  getCctvStreamProxyUrl,
+  getCctvStreamUrl,
+} from '../api/cctvApi';
 import type { Goal } from '../api/goalApi';
 import { getGoal } from '../api/goalApi';
 import type { RunningRecord } from '../api/runningApi';
@@ -328,16 +334,21 @@ function CctvVideoEE({ cctvIp, className }: { cctvIp: string; className: string 
     setStreamUrl(null);
     getCctvStreamUrl(cctvIp)
       .then((url) => {
-        if (url) { setStreamUrl(getCctvStreamProxyUrl(url)); setStatus('done'); }
-        else setStatus('error');
+        if (url) {
+          setStreamUrl(getCctvStreamProxyUrl(url));
+          setStatus('done');
+        } else setStatus('error');
       })
       .catch(() => setStatus('error'));
   }, [cctvIp]);
 
-  useEffect(() => { fetchUrl(); }, [fetchUrl]);
+  useEffect(() => {
+    fetchUrl();
+  }, [fetchUrl]);
 
   if (status === 'loading') return <div className="text-white/50 text-sm">영상 로딩 중...</div>;
-  if (status === 'error' || !streamUrl) return <div className="text-white/50 text-sm">영상 없음</div>;
+  if (status === 'error' || !streamUrl)
+    return <div className="text-white/50 text-sm">영상 없음</div>;
   return (
     <video
       ref={videoRef}
@@ -591,6 +602,20 @@ export default function MainPage() {
     setCctvModalOpen(false);
   }, [cctvOn, focusedId]);
 
+  useEffect(() => {
+    if (cctvModalOpen) {
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+    };
+  }, [cctvModalOpen]);
+
   const openCctvModal = useCallback((cctvname: string) => {
     setSelectedCctvId(cctvname);
     setCctvModalOpen(true);
@@ -618,8 +643,10 @@ export default function MainPage() {
       const safeName = escapeHtml(cctvname);
       const hlsUrl = getCctvHlsUrl(cctvurl);
       const safeHlsUrl = escapeHtml(hlsUrl);
-      const cctvIp = cctvimageurl?.startsWith('utic-ee://') ? cctvimageurl.slice('utic-ee://'.length) : null;
-      const safeBaseUrl = (!cctvIp && cctvimageurl) ? escapeHtml(getCctvImageUrl(cctvimageurl)) : '';
+      const cctvIp = cctvimageurl?.startsWith('utic-ee://')
+        ? cctvimageurl.slice('utic-ee://'.length)
+        : null;
+      const safeBaseUrl = !cctvIp && cctvimageurl ? escapeHtml(getCctvImageUrl(cctvimageurl)) : '';
       const encodedName = encodeURIComponent(cctvname);
       const isActive = cctvname === selectedCctvId;
       const bg = isActive ? '#155dfc' : '#94a3b8';
@@ -658,11 +685,12 @@ export default function MainPage() {
           style="width:192px;height:108px;object-fit:cover;display:none;background:#111827">`
             : ''
         }
-        ${cctvIp
-          ? `<div data-utic-ee-ip="${escapeHtml(cctvIp)}" style="height:108px;background:#f9fafb;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px">
+        ${
+          cctvIp
+            ? `<div data-utic-ee-ip="${escapeHtml(cctvIp)}" style="height:108px;background:#f9fafb;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px">
               <span style="font-size:12px;color:#6b7280">영상 로딩 중...</span>
             </div>`
-          : `<div style="height:108px;background:#f9fafb;display:${hasVideo || safeBaseUrl ? 'none' : 'flex'};align-items:center;justify-content:center;flex-direction:column;gap:4px">
+            : `<div style="height:108px;background:#f9fafb;display:${hasVideo || safeBaseUrl ? 'none' : 'flex'};align-items:center;justify-content:center;flex-direction:column;gap:4px">
               <span style="font-size:12px;color:#9ca3af">영상 없음</span>
               <span style="font-size:10px;color:#d1d5db">도시도로 CCTV</span>
             </div>`
@@ -711,7 +739,8 @@ export default function MainPage() {
                     videoEl.muted = true;
                     videoEl.controls = true;
                     videoEl.setAttribute('playsinline', '');
-                    videoEl.style.cssText = 'width:192px;height:108px;object-fit:cover;display:block;background:#111827';
+                    videoEl.style.cssText =
+                      'width:192px;height:108px;object-fit:cover;display:block;background:#111827';
                     videoEl.src = getCctvStreamProxyUrl(streamUrl);
                     // 클립 끝나면 새 URL로 갱신
                     videoEl.onended = async () => {
@@ -723,11 +752,13 @@ export default function MainPage() {
                     };
                     eeLoader.replaceWith(videoEl);
                   } else if (eeLoader.isConnected) {
-                    eeLoader.innerHTML = '<span style="font-size:12px;color:#9ca3af">영상 없음</span><span style="font-size:10px;color:#d1d5db">경기도 CCTV</span>';
+                    eeLoader.innerHTML =
+                      '<span style="font-size:12px;color:#9ca3af">영상 없음</span><span style="font-size:10px;color:#d1d5db">경기도 CCTV</span>';
                   }
                 } catch {
                   if (eeLoader.isConnected) {
-                    eeLoader.innerHTML = '<span style="font-size:12px;color:#9ca3af">영상 없음</span><span style="font-size:10px;color:#d1d5db">경기도 CCTV</span>';
+                    eeLoader.innerHTML =
+                      '<span style="font-size:12px;color:#9ca3af">영상 없음</span><span style="font-size:10px;color:#d1d5db">경기도 CCTV</span>';
                   }
                 }
               }
