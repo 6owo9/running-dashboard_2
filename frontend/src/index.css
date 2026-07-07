@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 :root {
   --background: oklch(1 0 0);
@@ -38,4 +38,12 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+.running-map .leaflet-tooltip-pane {
+  z-index: 650 !important;
+}
+
+.running-map .leaflet-popup-pane {
+  z-index: 700 !important;
 }

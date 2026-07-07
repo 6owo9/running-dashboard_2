@@ -1,10 +1,11 @@
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import Hls from 'hls.js';
 import { Activity, Cctv, Clock, Gauge, Target, Timer, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { kakaoCallback } from '../api/authApi';
 import type { CctvItem } from '../api/cctvApi';
-import { getCctvList } from '../api/cctvApi';
+import { getCctvHlsUrl, getCctvImageUrl, getCctvList, getCctvStreamProxyUrl, getCctvStreamUrl } from '../api/cctvApi';
 import type { Goal } from '../api/goalApi';
 import { getGoal } from '../api/goalApi';
 import type { RunningRecord } from '../api/runningApi';
@@ -186,7 +187,6 @@ function CalendarIcon() {
   );
 }
 
-
 const ROUTE_COLORS = [
   '#155dfc',
   '#0ea5e9',
@@ -197,6 +197,160 @@ const ROUTE_COLORS = [
   '#ec4899',
   '#14b8a6',
 ];
+
+const BUNDANG_CENTER: [number, number] = [37.3943, 127.1113];
+const CCTV_EXPAND_EVENT = 'running-dashboard:cctv-expand';
+
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (char) => {
+    const entities: Record<string, string> = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+    };
+    return entities[char];
+  });
+}
+
+function hasCctvCoord(item: CctvItem) {
+  return Number.isFinite(item.coordx) && Number.isFinite(item.coordy);
+}
+
+function nearestCctvItems(
+  items: CctvItem[],
+  center: L.LatLng,
+  limit = 40,
+  filter: (item: CctvItem) => boolean = hasCctvCoord
+) {
+  return items
+    .filter(filter)
+    .sort((a, b) => {
+      const da = (a.coordx - center.lng) ** 2 + (a.coordy - center.lat) ** 2;
+      const db = (b.coordx - center.lng) ** 2 + (b.coordy - center.lat) ** 2;
+      return da - db;
+    })
+    .slice(0, limit);
+}
+
+type HlsVideoElement = HTMLVideoElement & { __hls?: Hls };
+
+function attachHlsVideo(video: HTMLVideoElement, src: string) {
+  const target = video as HlsVideoElement;
+  target.__hls?.destroy();
+  target.__hls = undefined;
+  video.dataset.hlsAttached = '1';
+
+  if (Hls.isSupported()) {
+    const hls = new Hls({
+      liveDurationInfinity: true,
+      liveSyncDurationCount: 3,
+      lowLatencyMode: false,
+    });
+    hls.on(Hls.Events.ERROR, (_, data) => {
+      video.dataset.hlsError = `${data.type}:${data.details}`;
+    });
+    hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+      video.dataset.hlsMediaAttached = '1';
+      if (!video.dataset.hlsSourceLoaded) {
+        video.dataset.hlsSourceLoaded = '1';
+        hls.loadSource(src);
+      }
+    });
+    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      video.dataset.hlsManifest = '1';
+    });
+    hls.on(Hls.Events.LEVEL_LOADED, (_, data) => {
+      if (video.dataset.hlsStarted) return;
+      const fragments = data.details.fragments;
+      const startFragment = fragments[Math.max(0, fragments.length - 3)];
+      const startPosition = startFragment?.start ?? 0;
+
+      video.dataset.hlsStarted = '1';
+      video.dataset.hlsStart = String(startPosition);
+      hls.startLoad(startPosition);
+      void video.play().catch(() => {});
+    });
+    hls.on(Hls.Events.FRAG_LOADING, (_, data) => {
+      video.dataset.hlsFragment = data.frag.url.split('/').pop() ?? data.frag.url;
+    });
+    hls.on(Hls.Events.FRAG_LOADED, () => {
+      video.dataset.hlsFragmentLoaded = '1';
+    });
+    hls.attachMedia(video);
+    if (!video.dataset.hlsSourceLoaded) {
+      video.dataset.hlsSourceLoaded = '1';
+      hls.loadSource(src);
+    }
+    target.__hls = hls;
+    video.dataset.hlsMode = 'hlsjs';
+  } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    video.src = src;
+    video.dataset.hlsMode = 'native';
+  } else {
+    video.src = src;
+    video.dataset.hlsMode = 'direct';
+  }
+
+  void video.play().catch(() => {});
+}
+
+function detachHlsVideo(video: HTMLVideoElement | null) {
+  if (!video) return;
+  const target = video as HlsVideoElement;
+  target.__hls?.destroy();
+  target.__hls = undefined;
+  video.removeAttribute('src');
+  video.load();
+}
+
+function CctvVideo({ src, className }: { src: string; className: string }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    attachHlsVideo(video, getCctvHlsUrl(src));
+    return () => detachHlsVideo(video);
+  }, [src]);
+
+  return <video ref={videoRef} className={className} autoPlay muted playsInline controls />;
+}
+
+function CctvVideoEE({ cctvIp, className }: { cctvIp: string; className: string }) {
+  const [streamUrl, setStreamUrl] = useState<string | null>(null);
+  const [status, setStatus] = useState<'loading' | 'done' | 'error'>('loading');
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const fetchUrl = useCallback(() => {
+    setStatus('loading');
+    setStreamUrl(null);
+    getCctvStreamUrl(cctvIp)
+      .then((url) => {
+        if (url) { setStreamUrl(getCctvStreamProxyUrl(url)); setStatus('done'); }
+        else setStatus('error');
+      })
+      .catch(() => setStatus('error'));
+  }, [cctvIp]);
+
+  useEffect(() => { fetchUrl(); }, [fetchUrl]);
+
+  if (status === 'loading') return <div className="text-white/50 text-sm">영상 로딩 중...</div>;
+  if (status === 'error' || !streamUrl) return <div className="text-white/50 text-sm">영상 없음</div>;
+  return (
+    <video
+      ref={videoRef}
+      src={streamUrl}
+      className={className}
+      autoPlay
+      muted
+      playsInline
+      controls
+      onEnded={fetchUrl}
+    />
+  );
+}
 
 export default function MainPage() {
   const { token, user, isLoggedIn, login, logout, updateUser } = useAuth();
@@ -259,7 +413,7 @@ export default function MainPage() {
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
     const map = L.map(containerRef.current, {
-      center: [37.5665, 126.978],
+      center: BUNDANG_CENTER,
       zoom: 12,
       zoomControl: false,
     });
@@ -380,6 +534,20 @@ export default function MainPage() {
     });
   }, [allRecords, focusedId, mapZoom]);
 
+  const loadCctvData = useCallback(async () => {
+    const map = mapRef.current;
+    if (!map) return;
+    const bounds = map.getBounds();
+    const center = map.getCenter();
+    const data = await getCctvList(
+      bounds.getWest(),
+      bounds.getEast(),
+      bounds.getSouth(),
+      bounds.getNorth()
+    );
+    setCctvData(nearestCctvItems(data, center, 80, hasCctvCoord));
+  }, []);
+
   // CCTV ON/OFF 시 API 호출 or 레이어 제거
   useEffect(() => {
     const map = mapRef.current;
@@ -388,16 +556,56 @@ export default function MainPage() {
 
     if (!cctvOn) {
       setSelectedCctvId(null);
+      setCctvModalOpen(false);
       setCctvData([]);
       layer.remove();
       return;
     }
 
-    const b = map.getBounds();
-    getCctvList(b.getWest(), b.getEast(), b.getSouth(), b.getNorth())
-      .then(setCctvData)
-      .catch(() => setCctvData([]));
-  }, [cctvOn]); // eslint-disable-line react-hooks/exhaustive-deps
+    loadCctvData().catch(() => setCctvData([]));
+  }, [cctvOn, loadCctvData]);
+
+  // CCTV ON 상태에서 지도 이동 후 debounce 재조회
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !cctvOn) return;
+
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const onMoveEnd = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        loadCctvData().catch(() => setCctvData([]));
+      }, 500);
+    };
+
+    map.on('moveend', onMoveEnd);
+    return () => {
+      map.off('moveend', onMoveEnd);
+      if (timer) clearTimeout(timer);
+    };
+  }, [cctvOn, loadCctvData]);
+
+  useEffect(() => {
+    if (!cctvOn) return;
+    setSelectedCctvId(null);
+    setCctvModalOpen(false);
+  }, [cctvOn, focusedId]);
+
+  const openCctvModal = useCallback((cctvname: string) => {
+    setSelectedCctvId(cctvname);
+    setCctvModalOpen(true);
+  }, []);
+
+  useEffect(() => {
+    const handleExpand = (event: Event) => {
+      const encodedName = (event as CustomEvent<string>).detail;
+      if (!encodedName) return;
+      openCctvModal(decodeURIComponent(encodedName));
+    };
+
+    window.addEventListener(CCTV_EXPAND_EVENT, handleExpand);
+    return () => window.removeEventListener(CCTV_EXPAND_EVENT, handleExpand);
+  }, [openCctvModal]);
 
   // CCTV 마커 렌더링
   useEffect(() => {
@@ -406,7 +614,13 @@ export default function MainPage() {
     if (!map || !layer || !cctvOn) return;
 
     layer.clearLayers();
-    cctvData.forEach(({ cctvname, cctvurl, coordx, coordy }) => {
+    cctvData.forEach(({ cctvname, cctvurl, cctvimageurl, coordx, coordy }) => {
+      const safeName = escapeHtml(cctvname);
+      const hlsUrl = getCctvHlsUrl(cctvurl);
+      const safeHlsUrl = escapeHtml(hlsUrl);
+      const cctvIp = cctvimageurl?.startsWith('utic-ee://') ? cctvimageurl.slice('utic-ee://'.length) : null;
+      const safeBaseUrl = (!cctvIp && cctvimageurl) ? escapeHtml(getCctvImageUrl(cctvimageurl)) : '';
+      const encodedName = encodeURIComponent(cctvname);
       const isActive = cctvname === selectedCctvId;
       const bg = isActive ? '#155dfc' : '#94a3b8';
       const icon = L.divIcon({
@@ -423,36 +637,124 @@ export default function MainPage() {
         iconSize: [22, 22],
         iconAnchor: [11, 11],
       });
+      const hasVideo = !!safeHlsUrl;
       const popupHtml = `<div style="min-width:192px">
         <div style="display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid #e5e7eb">
-          <span style="width:8px;height:8px;border-radius:50%;background:#3b82f6;display:inline-block;flex-shrink:0"></span>
-          <span style="font-size:11px;font-weight:600;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px">${cctvname}</span>
+          <span style="width:8px;height:8px;border-radius:50%;background:${hasVideo ? '#3b82f6' : '#9ca3af'};display:inline-block;flex-shrink:0"></span>
+          <span style="font-size:11px;font-weight:600;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px">${safeName}</span>
         </div>
-        <img src="${cctvurl}" alt="${cctvname}"
-          onload="setTimeout(()=>{this.src='${cctvurl}?t='+Date.now()},5000)"
-          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
-          style="width:192px;height:108px;object-fit:cover;display:block">
-        <div style="height:108px;background:#f9fafb;display:none;align-items:center;justify-content:center">
-          <span style="font-size:12px;color:#9ca3af">영상 없음</span>
-        </div>
+        ${
+          hasVideo
+            ? `<video data-hls-src="${safeHlsUrl}" autoplay muted playsinline controls
+            style="width:192px;height:108px;object-fit:cover;display:block;background:#111827">
+          </video>`
+            : ''
+        }
+        ${
+          safeBaseUrl
+            ? `<img src="${safeBaseUrl}&t=${Date.now()}" alt="${safeName}" data-base-src="${safeBaseUrl}"
+          onload="if(this.previousElementSibling.style.display==='none'){this.style.display='block'};this.nextElementSibling.style.display='none';if(!this.dataset.timer){this.dataset.timer='1';setInterval(()=>{this.src=this.dataset.baseSrc+'&t='+Date.now()},1000)}"
+          onerror="if(!this.dataset.timer){this.dataset.timer='1';setInterval(()=>{this.src=this.dataset.baseSrc+'&t='+Date.now()},1000)};this.style.display='none';this.nextElementSibling.style.display='flex'"
+          style="width:192px;height:108px;object-fit:cover;display:none;background:#111827">`
+            : ''
+        }
+        ${cctvIp
+          ? `<div data-utic-ee-ip="${escapeHtml(cctvIp)}" style="height:108px;background:#f9fafb;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px">
+              <span style="font-size:12px;color:#6b7280">영상 로딩 중...</span>
+            </div>`
+          : `<div style="height:108px;background:#f9fafb;display:${hasVideo || safeBaseUrl ? 'none' : 'flex'};align-items:center;justify-content:center;flex-direction:column;gap:4px">
+              <span style="font-size:12px;color:#9ca3af">영상 없음</span>
+              <span style="font-size:10px;color:#d1d5db">도시도로 CCTV</span>
+            </div>`
+        }
+        <button type="button" data-cctv-name="${encodedName}"
+          onclick="window.dispatchEvent(new CustomEvent('${CCTV_EXPAND_EVENT}',{detail:this.dataset.cctvName}))"
+          style="width:100%;height:30px;border:0;border-top:1px solid #e5e7eb;background:#fff;color:#155dfc;font-size:12px;font-weight:700;cursor:pointer">
+          확대보기
+        </button>
       </div>`;
-      const m = L.marker([coordy, coordx], { icon })
+      const m = L.marker([coordy, coordx], { icon, zIndexOffset: 3000 })
         .bindPopup(popupHtml, { closeButton: false, className: 'cctv-popup', offset: [0, -11] })
         .bindTooltip(cctvname, { permanent: false, direction: 'top', offset: [0, -8] })
+        .on('popupopen', (event) => {
+          window.setTimeout(async () => {
+            const popupEl = event.popup.getElement();
+
+            const video = popupEl?.querySelector('video[data-hls-src]');
+            const fallback = popupEl?.querySelector('img[data-base-src]');
+            const hlsSrc = video?.getAttribute('data-hls-src');
+            if (video instanceof HTMLVideoElement && hlsSrc) {
+              attachHlsVideo(video, hlsSrc);
+              window.setTimeout(() => {
+                if (video.readyState === 0 && !video.dataset.hlsManifest) {
+                  video.style.display = 'none';
+                  if (fallback instanceof HTMLImageElement) {
+                    fallback.style.display = 'block';
+                  } else {
+                    const noVideoEl = video.nextElementSibling as HTMLElement | null;
+                    if (noVideoEl) noVideoEl.style.display = 'flex';
+                  }
+                }
+              }, 5000);
+            }
+
+            // 경기도 UTIC EE: 팝업 열릴 때 스트림 URL 조회 후 동적으로 비디오 주입
+            const eeLoader = popupEl?.querySelector('[data-utic-ee-ip]');
+            if (eeLoader instanceof HTMLElement) {
+              const ip = eeLoader.getAttribute('data-utic-ee-ip');
+              if (ip) {
+                try {
+                  const streamUrl = await getCctvStreamUrl(ip);
+                  if (streamUrl && eeLoader.isConnected) {
+                    const videoEl = document.createElement('video');
+                    videoEl.autoplay = true;
+                    videoEl.muted = true;
+                    videoEl.controls = true;
+                    videoEl.setAttribute('playsinline', '');
+                    videoEl.style.cssText = 'width:192px;height:108px;object-fit:cover;display:block;background:#111827';
+                    videoEl.src = getCctvStreamProxyUrl(streamUrl);
+                    // 클립 끝나면 새 URL로 갱신
+                    videoEl.onended = async () => {
+                      const fresh = await getCctvStreamUrl(ip).catch(() => null);
+                      if (fresh && videoEl.isConnected) {
+                        videoEl.src = getCctvStreamProxyUrl(fresh);
+                        videoEl.play().catch(() => {});
+                      }
+                    };
+                    eeLoader.replaceWith(videoEl);
+                  } else if (eeLoader.isConnected) {
+                    eeLoader.innerHTML = '<span style="font-size:12px;color:#9ca3af">영상 없음</span><span style="font-size:10px;color:#d1d5db">경기도 CCTV</span>';
+                  }
+                } catch {
+                  if (eeLoader.isConnected) {
+                    eeLoader.innerHTML = '<span style="font-size:12px;color:#9ca3af">영상 없음</span><span style="font-size:10px;color:#d1d5db">경기도 CCTV</span>';
+                  }
+                }
+              }
+            }
+          }, 0);
+        })
+        .on('popupclose', (event) => {
+          const hlsVideo = event.popup.getElement()?.querySelector('video[data-hls-src]');
+          if (hlsVideo instanceof HTMLVideoElement) {
+            detachHlsVideo(hlsVideo);
+          }
+          const eeVideo = event.popup.getElement()?.querySelector('video:not([data-hls-src])');
+          if (eeVideo instanceof HTMLVideoElement) {
+            eeVideo.pause();
+            eeVideo.src = '';
+            eeVideo.load();
+          }
+        })
         .on('click', () => {
           setSelectedCctvId(cctvname);
-          if (window.innerWidth < 768) setCctvModalOpen(true);
+          if (window.innerWidth < 768) openCctvModal(cctvname);
         })
         .addTo(layer);
       if (cctvname === selectedCctvId && window.innerWidth >= 768) m.openPopup();
     });
     layer.addTo(map);
-
-    if (selectedCctvId === null && cctvData.length > 0) {
-      const bounds = L.latLngBounds(cctvData.map((c) => [c.coordy, c.coordx] as [number, number]));
-      map.fitBounds(bounds, { padding: [60, 60] });
-    }
-  }, [cctvData, selectedCctvId, cctvOn]);
+  }, [cctvData, selectedCctvId, cctvOn, openCctvModal]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -560,10 +862,10 @@ export default function MainPage() {
             </div>
 
             <div className="relative h-[300px] sm:h-[600px] bg-muted">
-              <div ref={containerRef} className="absolute inset-0 isolate" />
+              <div ref={containerRef} className="running-map absolute inset-0 z-0 isolate" />
 
               {/* CCTV 토글 버튼 — Leaflet 줌 컨트롤 아래 (touch 30px 기준: 10+30+1+30+9gap=80px) */}
-              <div className="absolute top-[80px] right-[10px] z-[400]">
+              <div className="absolute top-[80px] right-[10px] z-[100]">
                 <button
                   onClick={() => setCctvOn((v) => !v)}
                   title={cctvOn ? 'CCTV OFF' : 'CCTV ON'}
@@ -578,16 +880,16 @@ export default function MainPage() {
 
               {/* CCTV 활성 뱃지 */}
               {cctvOn && (
-                <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[400] pointer-events-none">
+                <div className="absolute top-14 left-1/2 -translate-x-1/2 z-[90] pointer-events-none sm:top-3">
                   <span className="flex items-center gap-1.5 text-[11px] font-semibold bg-blue-500 text-white px-2.5 py-1 rounded-full shadow-md">
                     <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                    CCTV 레이어 활성
+                    CCTV 활성
                   </span>
                 </div>
               )}
 
               {allRecords.length === 0 && (
-                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[50] pointer-events-none">
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[30] pointer-events-none">
                   <span className="text-sm text-muted-foreground bg-card px-4 py-2 rounded-full shadow-sm border border-border whitespace-nowrap">
                     러닝 기록이 없습니다.
                   </span>
@@ -595,8 +897,8 @@ export default function MainPage() {
               )}
 
               {weather && (
-                <div className="absolute top-3 left-3 z-[400] pointer-events-none">
-                  <div className="flex items-center gap-4 bg-[#fcfcfc] border border-[#d6d6d6] rounded-lg px-5 py-2.5 shadow-sm whitespace-nowrap">
+                <div className="absolute top-3 left-3 right-[58px] z-[90] pointer-events-none sm:right-auto">
+                  <div className="flex w-fit max-w-full items-center gap-2 bg-[#fcfcfc] border border-[#d6d6d6] rounded-lg px-3 py-2 shadow-sm whitespace-nowrap sm:gap-4 sm:px-5 sm:py-2.5">
                     <img src={wmoIcon(weather.weatherCode)} alt="" className="w-8 h-8 shrink-0" />
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-4">
@@ -739,9 +1041,9 @@ export default function MainPage() {
         </div>
       </main>
 
-      {/* 모바일 CCTV 모달 — 768px 이하에서만 표시 */}
+      {/* CCTV 확대보기 모달 */}
       {cctvModalOpen && (
-        <div className="fixed inset-0 z-[9999] bg-black/90 flex flex-col md:hidden">
+        <div className="fixed inset-0 z-[1000] bg-black/90 flex flex-col">
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
             <div className="flex items-center gap-2 text-white">
               <Cctv size={16} />
@@ -760,11 +1062,29 @@ export default function MainPage() {
           <div className="flex-1 flex items-center justify-center p-4">
             {(() => {
               const cctv = cctvData.find((c) => c.cctvname === selectedCctvId);
-              return cctv ? (
-                <img src={cctv.cctvurl} alt={cctv.cctvname} className="w-full max-h-full object-contain" />
-              ) : (
-                <span className="text-white/50 text-sm">영상 없음</span>
-              );
+              if (!cctv) return <span className="text-white/50 text-sm">영상 없음</span>;
+              const eeIp = cctv.cctvimageurl?.startsWith('utic-ee://')
+                ? cctv.cctvimageurl.slice('utic-ee://'.length)
+                : null;
+              if (eeIp) {
+                return (
+                  <CctvVideoEE
+                    key={eeIp}
+                    cctvIp={eeIp}
+                    className="w-full max-w-5xl max-h-full object-contain bg-black"
+                  />
+                );
+              }
+              if (cctv.cctvurl) {
+                return (
+                  <CctvVideo
+                    key={cctv.cctvurl}
+                    src={cctv.cctvurl}
+                    className="w-full max-w-5xl max-h-full object-contain bg-black"
+                  />
+                );
+              }
+              return <span className="text-white/50 text-sm">영상 없음</span>;
             })()}
           </div>
         </div>
