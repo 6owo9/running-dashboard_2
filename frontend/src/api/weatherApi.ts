@@ -26,7 +26,11 @@ export async function getCityName(lat: number, lon: number): Promise<string> {
   }
 }
 
-export async function getCurrentWeather(lat: number, lon: number, cityName: string): Promise<CurrentWeather> {
+export async function getCurrentWeather(
+  lat: number,
+  lon: number,
+  cityName: string
+): Promise<CurrentWeather> {
   const url =
     `https://api.open-meteo.com/v1/forecast` +
     `?latitude=${lat}&longitude=${lon}` +

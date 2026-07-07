@@ -1,70 +1,75 @@
-import { useEffect, useState } from 'react'
-import { X, Target } from 'lucide-react'
-import ProgressBar from './ProgressBar'
-import { saveGoal } from '../api/goalApi'
-import type { Goal } from '../api/goalApi'
+import { useEffect, useState } from 'react';
+import { X, Target } from 'lucide-react';
+import ProgressBar from './ProgressBar';
+import { saveGoal } from '../api/goalApi';
+import type { Goal } from '../api/goalApi';
 
 interface Props {
-  isOpen: boolean
-  onClose: () => void
-  goal: Goal | null
-  onSaved: () => void
-  token: string
+  isOpen: boolean;
+  onClose: () => void;
+  goal: Goal | null;
+  onSaved: () => void;
+  token: string;
 }
 
-type View = 'form' | 'confirm' | 'result'
+type View = 'form' | 'confirm' | 'result';
 
 export default function GoalModal({ isOpen, onClose, goal, onSaved, token }: Props) {
-  const [view, setView] = useState<View>(goal ? 'result' : 'form')
-  const [input, setInput] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [view, setView] = useState<View>(goal ? 'result' : 'form');
+  const [input, setInput] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    document.body.style.overflow = isOpen ? 'hidden' : ''
-    return () => { document.body.style.overflow = '' }
-  }, [isOpen])
+    document.body.style.overflow = isOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen) {
-      setView(goal ? 'result' : 'form')
-      setInput(goal ? String(goal.targetDistanceKm) : '')
-      setError(null)
+      setView(goal ? 'result' : 'form');
+      setInput(goal ? String(goal.targetDistanceKm) : '');
+      setError(null);
     }
-  }, [isOpen, goal])
+  }, [isOpen, goal]);
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   const handleSaveClick = () => {
-    const val = parseFloat(input)
+    const val = parseFloat(input);
     if (!input || isNaN(val) || val <= 0) {
-      setError('올바른 거리(km)를 입력해주세요.')
-      return
+      setError('올바른 거리(km)를 입력해주세요.');
+      return;
     }
-    setError(null)
-    setView('confirm')
-  }
+    setError(null);
+    setView('confirm');
+  };
 
   const handleConfirm = async () => {
-    setSaving(true)
+    setSaving(true);
     try {
-      await saveGoal(parseFloat(input), token)
-      onSaved()
-      onClose()
+      await saveGoal(parseFloat(input), token);
+      onSaved();
+      onClose();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : '저장에 실패했습니다.')
-      setView('form')
+      setError(e instanceof Error ? e.message : '저장에 실패했습니다.');
+      setView('form');
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   return (
-    <div className="fixed inset-0 z-[500] flex items-end sm:items-center justify-center" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[500] flex items-end sm:items-center justify-center"
+      onClick={onClose}
+    >
       <div className="absolute inset-0 bg-black/40" />
       <div
         className="relative bg-card w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl shadow-xl"
-        onClick={e => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* 헤더 */}
         <div className="flex items-center justify-between p-5 border-b border-border">
@@ -94,7 +99,7 @@ export default function GoalModal({ isOpen, onClose, goal, onSaved, token }: Pro
                     min="0.1"
                     step="0.1"
                     value={input}
-                    onChange={e => setInput(e.target.value)}
+                    onChange={(e) => setInput(e.target.value)}
                     disabled={view === 'confirm'}
                     placeholder="예: 100"
                     className="flex-1 border border-border rounded-xl px-4 py-2.5 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:bg-muted disabled:text-muted-foreground transition-all"
@@ -149,7 +154,9 @@ export default function GoalModal({ isOpen, onClose, goal, onSaved, token }: Pro
               />
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-muted rounded-xl p-4 text-center">
-                  <p className="text-2xl font-bold text-foreground">{goal.achievedDistanceKm.toFixed(1)}</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {goal.achievedDistanceKm.toFixed(1)}
+                  </p>
                   <p className="text-xs text-muted-foreground mt-1">달성 km</p>
                 </div>
                 <div className="bg-muted rounded-xl p-4 text-center">
@@ -158,7 +165,10 @@ export default function GoalModal({ isOpen, onClose, goal, onSaved, token }: Pro
                 </div>
               </div>
               <button
-                onClick={() => { setInput(String(goal.targetDistanceKm)); setView('form') }}
+                onClick={() => {
+                  setInput(String(goal.targetDistanceKm));
+                  setView('form');
+                }}
                 className="w-full border border-border rounded-xl py-2.5 text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
               >
                 수정
@@ -168,5 +178,5 @@ export default function GoalModal({ isOpen, onClose, goal, onSaved, token }: Pro
         </div>
       </div>
     </div>
-  )
+  );
 }

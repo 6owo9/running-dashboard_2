@@ -8,6 +8,7 @@ dist/
 # Build output
 frontend/dist/
 backend/build/
+*.log
 
 # IDE
 .idea/

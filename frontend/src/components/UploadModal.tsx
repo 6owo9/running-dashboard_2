@@ -1,25 +1,38 @@
-import { useEffect, useRef, useState } from 'react'
-import { X, Upload, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, Clock, Activity } from 'lucide-react'
-import { uploadFile } from '../api/runningApi'
-import type { RunningRecord } from '../api/runningApi'
+import { useEffect, useRef, useState } from 'react';
+import {
+  X,
+  Upload,
+  CheckCircle,
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Activity,
+} from 'lucide-react';
+import { uploadFile } from '../api/runningApi';
+import type { RunningRecord } from '../api/runningApi';
 
 function fmtDuration(s: number) {
-  const h = Math.floor(s / 3600)
-  const m = Math.floor((s % 3600) / 60)
-  const sec = s % 60
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
   return h > 0
     ? `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
-    : `${m}:${String(sec).padStart(2, '0')}`
+    : `${m}:${String(sec).padStart(2, '0')}`;
 }
 
 function fmtPace(p: number) {
-  const min = Math.floor(p)
-  const sec = Math.round((p - min) * 60)
-  return `${min}'${String(sec).padStart(2, '0')}"`
+  const min = Math.floor(p);
+  const sec = Math.round((p - min) * 60);
+  return `${min}'${String(sec).padStart(2, '0')}"`;
 }
 
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', weekday: 'short' })
+  return new Date(dateStr).toLocaleDateString('ko-KR', {
+    month: 'short',
+    day: 'numeric',
+    weekday: 'short',
+  });
 }
 
 function Calendar({
@@ -27,19 +40,22 @@ function Calendar({
   selected,
   onSelect,
 }: {
-  records: RunningRecord[]
-  selected: string | null
-  onSelect: (date: string) => void
+  records: RunningRecord[];
+  selected: string | null;
+  onSelect: (date: string) => void;
 }) {
-  const [view, setView] = useState(new Date())
-  const year = view.getFullYear()
-  const month = view.getMonth()
-  const recordDates = new Set(records.map(r => r.date))
-  const firstDay = new Date(year, month, 1).getDay()
-  const daysInMonth = new Date(year, month + 1, 0).getDate()
-  const cells = [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)]
+  const [view, setView] = useState(new Date());
+  const year = view.getFullYear();
+  const month = view.getMonth();
+  const recordDates = new Set(records.map((r) => r.date));
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const cells = [
+    ...Array(firstDay).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ];
   const toStr = (d: number) =>
-    `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+    `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
   return (
     <div>
@@ -50,7 +66,9 @@ function Calendar({
         >
           <ChevronLeft size={15} />
         </button>
-        <span className="text-sm font-semibold text-foreground">{year}년 {month + 1}월</span>
+        <span className="text-sm font-semibold text-foreground">
+          {year}년 {month + 1}월
+        </span>
         <button
           onClick={() => setView(new Date(year, month + 1))}
           className="p-1.5 hover:bg-accent rounded-lg transition-colors text-muted-foreground hover:text-foreground"
@@ -59,16 +77,18 @@ function Calendar({
         </button>
       </div>
       <div className="grid grid-cols-7 gap-1 text-center mb-1">
-        {['일', '월', '화', '수', '목', '금', '토'].map(d => (
-          <span key={d} className="text-xs text-muted-foreground">{d}</span>
+        {['일', '월', '화', '수', '목', '금', '토'].map((d) => (
+          <span key={d} className="text-xs text-muted-foreground">
+            {d}
+          </span>
         ))}
       </div>
       <div className="grid grid-cols-7 gap-1 text-center">
         {cells.map((day, i) => {
-          if (!day) return <div key={i} />
-          const dateStr = toStr(day)
-          const has = recordDates.has(dateStr)
-          const sel = selected === dateStr
+          if (!day) return <div key={i} />;
+          const dateStr = toStr(day);
+          const has = recordDates.has(dateStr);
+          const sel = selected === dateStr;
           return (
             <button
               key={i}
@@ -77,75 +97,82 @@ function Calendar({
                 sel
                   ? 'bg-primary text-primary-foreground'
                   : has
-                  ? 'hover:bg-accent text-foreground font-medium'
-                  : 'text-muted-foreground/40 cursor-default'
+                    ? 'hover:bg-accent text-foreground font-medium'
+                    : 'text-muted-foreground/40 cursor-default'
               }`}
             >
               {day}
               {has && (
-                <span className={`absolute bottom-0.5 w-1 h-1 rounded-full ${sel ? 'bg-primary-foreground' : 'bg-green-500'}`} />
+                <span
+                  className={`absolute bottom-0.5 w-1 h-1 rounded-full ${sel ? 'bg-primary-foreground' : 'bg-green-500'}`}
+                />
               )}
             </button>
-          )
+          );
         })}
       </div>
     </div>
-  )
+  );
 }
 
 interface Props {
-  isOpen: boolean
-  onClose: () => void
-  onUploaded: () => void
-  records: RunningRecord[]
-  token: string
+  isOpen: boolean;
+  onClose: () => void;
+  onUploaded: () => void;
+  records: RunningRecord[];
+  token: string;
 }
 
 export default function UploadModal({ isOpen, onClose, onUploaded, records, token }: Props) {
-  const [selectedDate, setSelectedDate] = useState<string | null>(null)
-  const [uploading, setUploading] = useState(false)
-  const [result, setResult] = useState<RunningRecord | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [dragging, setDragging] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [result, setResult] = useState<RunningRecord | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    document.body.style.overflow = isOpen ? 'hidden' : ''
-    return () => { document.body.style.overflow = '' }
-  }, [isOpen])
+    document.body.style.overflow = isOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   const handleFile = async (file: File) => {
-    if (uploading) return
-    const title = file.name.replace(/\.[^.]+$/, '')
-    if (records.some(r => r.title === title)) {
-      window.alert(`이미 존재하는 기록입니다: ${title}`)
-      return
+    if (uploading) return;
+    const title = file.name.replace(/\.[^.]+$/, '');
+    if (records.some((r) => r.title === title)) {
+      window.alert(`이미 존재하는 기록입니다: ${title}`);
+      return;
     }
-    setUploading(true)
-    setError(null)
-    setResult(null)
+    setUploading(true);
+    setError(null);
+    setResult(null);
     try {
-      const uploaded = await uploadFile(file, token)
-      setResult(uploaded)
-      onUploaded()
+      const uploaded = await uploadFile(file, token);
+      setResult(uploaded);
+      onUploaded();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : '업로드에 실패했습니다.')
+      setError(e instanceof Error ? e.message : '업로드에 실패했습니다.');
     } finally {
-      setUploading(false)
-      if (inputRef.current) inputRef.current.value = ''
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = '';
     }
-  }
+  };
 
-  const filtered = selectedDate ? records.filter(r => r.date === selectedDate) : records
+  const filtered = selectedDate ? records.filter((r) => r.date === selectedDate) : records;
 
   return (
-    <div className="fixed inset-0 z-[500] flex items-end sm:items-center justify-center" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[500] flex items-end sm:items-center justify-center"
+      onClick={onClose}
+    >
       <div className="absolute inset-0 bg-black/40" />
       <div
         className="relative bg-card w-full sm:max-w-2xl rounded-t-2xl sm:rounded-2xl max-h-[92vh] overflow-y-auto shadow-xl"
-        onClick={e => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* 헤더 */}
         <div className="flex items-center justify-between p-5 border-b border-border sticky top-0 bg-card z-10">
@@ -161,9 +188,16 @@ export default function UploadModal({ isOpen, onClose, onUploaded, records, toke
         <div className="p-5 flex flex-col gap-4">
           {/* 업로드 영역 */}
           <label
-            onDragOver={e => { e.preventDefault(); setDragging(true) }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragging(true);
+            }}
             onDragLeave={() => setDragging(false)}
-            onDrop={e => { e.preventDefault(); setDragging(false); e.dataTransfer.files[0] && handleFile(e.dataTransfer.files[0]) }}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragging(false);
+              e.dataTransfer.files[0] && handleFile(e.dataTransfer.files[0]);
+            }}
             className={`relative flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed py-10 transition-colors ${
               uploading ? 'cursor-default' : 'cursor-pointer'
             } ${dragging ? 'border-primary bg-accent' : 'border-border hover:border-muted-foreground'}`}
@@ -171,9 +205,8 @@ export default function UploadModal({ isOpen, onClose, onUploaded, records, toke
             <input
               ref={inputRef}
               type="file"
-
               className="absolute inset-0 opacity-0 w-full h-full cursor-pointer disabled:cursor-default z-10"
-              onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])}
+              onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
               disabled={uploading}
             />
             <Upload size={28} className={dragging ? 'text-primary' : 'text-muted-foreground'} />
@@ -203,10 +236,16 @@ export default function UploadModal({ isOpen, onClose, onUploaded, records, toke
               <div className="grid grid-cols-3 gap-2">
                 {[
                   { val: result.distanceKm.toFixed(2), unit: 'km' },
-                  { val: result.durationSeconds ? fmtDuration(result.durationSeconds) : '-', unit: '시간' },
+                  {
+                    val: result.durationSeconds ? fmtDuration(result.durationSeconds) : '-',
+                    unit: '시간',
+                  },
                   { val: result.paceMinPerKm ? fmtPace(result.paceMinPerKm) : '-', unit: '페이스' },
                 ].map(({ val, unit }) => (
-                  <div key={unit} className="bg-card rounded-xl p-3 text-center border border-border">
+                  <div
+                    key={unit}
+                    className="bg-card rounded-xl p-3 text-center border border-border"
+                  >
                     <p className="text-lg font-bold text-foreground">{val}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">{unit}</p>
                   </div>
@@ -239,14 +278,16 @@ export default function UploadModal({ isOpen, onClose, onUploaded, records, toke
               <p className="text-sm text-muted-foreground">기록이 없습니다.</p>
             ) : (
               <div className="space-y-2">
-                {filtered.map(r => (
+                {filtered.map((r) => (
                   <div
                     key={r.id}
                     onClick={() => setSelectedDate(r.date)}
                     className="p-3 rounded-lg border border-border cursor-pointer transition-all hover:shadow-sm hover:border-primary/50"
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-foreground">{formatDate(r.date)}</span>
+                      <span className="text-sm font-medium text-foreground">
+                        {formatDate(r.date)}
+                      </span>
                       <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full truncate max-w-32">
                         {r.title}
                       </span>
@@ -258,7 +299,9 @@ export default function UploadModal({ isOpen, onClose, onUploaded, records, toke
                         </div>
                         <div>
                           <p className="text-[10px] text-muted-foreground">거리</p>
-                          <p className="text-xs font-semibold text-foreground">{r.distanceKm.toFixed(1)} km</p>
+                          <p className="text-xs font-semibold text-foreground">
+                            {r.distanceKm.toFixed(1)} km
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5">
@@ -292,5 +335,5 @@ export default function UploadModal({ isOpen, onClose, onUploaded, records, toke
         </div>
       </div>
     </div>
-  )
+  );
 }

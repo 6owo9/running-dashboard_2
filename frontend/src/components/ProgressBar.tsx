@@ -1,12 +1,12 @@
 interface ProgressBarProps {
-  value: number        // 0 ~ 100
-  label?: string
-  achieved?: string
-  target?: string
+  value: number; // 0 ~ 100
+  label?: string;
+  achieved?: string;
+  target?: string;
 }
 
 export default function ProgressBar({ value, label, achieved, target }: ProgressBarProps) {
-  const clamped = Math.min(Math.max(value, 0), 100)
+  const clamped = Math.min(Math.max(value, 0), 100);
 
   return (
     <div className="flex flex-col gap-2">
@@ -31,5 +31,5 @@ export default function ProgressBar({ value, label, achieved, target }: Progress
         </div>
       )}
     </div>
-  )
+  );
 }

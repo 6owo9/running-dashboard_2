@@ -1,26 +1,26 @@
 export interface AuthUser {
-  id: number
-  username: string
-  nickname: string
-  profileImageId: number
+  id: number;
+  username: string;
+  nickname: string;
+  profileImageId: number;
 }
 
 export interface LoginResponse {
-  token: string
-  user: AuthUser
+  token: string;
+  user: AuthUser;
 }
 
 async function handleResponse<T>(res: Response): Promise<T> {
-  const body = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(body.message || '요청에 실패했습니다.')
-  return body.data
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.message || '요청에 실패했습니다.');
+  return body.data;
 }
 
 export async function signup(data: {
-  username: string
-  email: string
-  password: string
-  nickname: string
+  username: string;
+  email: string;
+  password: string;
+  nickname: string;
 }): Promise<LoginResponse> {
   return handleResponse<LoginResponse>(
     await fetch('/api/auth/signup', {
@@ -28,7 +28,7 @@ export async function signup(data: {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     })
-  )
+  );
 }
 
 export async function login(username: string, password: string): Promise<LoginResponse> {
@@ -38,7 +38,7 @@ export async function login(username: string, password: string): Promise<LoginRe
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
     })
-  )
+  );
 }
 
 export async function updateProfile(
@@ -54,14 +54,16 @@ export async function updateProfile(
       },
       body: JSON.stringify(data),
     })
-  )
+  );
 }
 
 export async function kakaoCallback(code: string): Promise<LoginResponse> {
-  const redirectUri = import.meta.env.VITE_KAKAO_REDIRECT_URI
+  const redirectUri = import.meta.env.VITE_KAKAO_REDIRECT_URI;
   return handleResponse<LoginResponse>(
-    await fetch(`/api/auth/kakao/callback?code=${encodeURIComponent(code)}&redirectUri=${encodeURIComponent(redirectUri)}`)
-  )
+    await fetch(
+      `/api/auth/kakao/callback?code=${encodeURIComponent(code)}&redirectUri=${encodeURIComponent(redirectUri)}`
+    )
+  );
 }
 
 export async function changePassword(
@@ -77,5 +79,5 @@ export async function changePassword(
       },
       body: JSON.stringify(data),
     })
-  )
+  );
 }
