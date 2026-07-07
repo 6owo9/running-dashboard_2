@@ -37,6 +37,9 @@ kakao:
 its:
   api-key: ${ITS_API_KEY:}
 
+cctv:
+  provider: ${CCTV_PROVIDER:both}
+
 logging:
   level:
     com.running: DEBUG
