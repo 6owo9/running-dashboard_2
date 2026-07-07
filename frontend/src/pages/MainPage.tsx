@@ -596,6 +596,18 @@ export default function MainPage() {
     };
   }, [cctvOn, loadCctvData]);
 
+  // CCTV ON 상태에서 3분마다 자동 갱신
+  useEffect(() => {
+    if (!cctvOn) return;
+    const id = setInterval(
+      () => {
+        loadCctvData().catch(() => setCctvData([]));
+      },
+      3 * 60 * 1000
+    );
+    return () => clearInterval(id);
+  }, [cctvOn, loadCctvData]);
+
   useEffect(() => {
     if (!cctvOn) return;
     setSelectedCctvId(null);
