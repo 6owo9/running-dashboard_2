@@ -596,11 +596,21 @@ export default function MainPage() {
     };
   }, [cctvOn, loadCctvData]);
 
-  // CCTV ON 상태에서 3분마다 자동 갱신
+  // CCTV ON 상태에서 3분마다 자동 갱신 (영상 재생 중에는 건너뜀)
+  const selectedCctvIdRef = useRef(selectedCctvId);
+  const cctvModalOpenRef = useRef(cctvModalOpen);
+  useEffect(() => {
+    selectedCctvIdRef.current = selectedCctvId;
+  }, [selectedCctvId]);
+  useEffect(() => {
+    cctvModalOpenRef.current = cctvModalOpen;
+  }, [cctvModalOpen]);
+
   useEffect(() => {
     if (!cctvOn) return;
     const id = setInterval(
       () => {
+        if (selectedCctvIdRef.current || cctvModalOpenRef.current) return;
         loadCctvData().catch(() => setCctvData([]));
       },
       3 * 60 * 1000
